@@ -69,7 +69,7 @@
                     <button type="submit" class="btn btn-success flex-grow-1 me-2">
                         <i class="fa fa-save me-2"></i> Save Changes
                     </button>
-                    
+                     
                     <button type="button" class="btn btn-danger" id="deleteBtn">
                         <i class="fa fa-trash me-2"></i> Delete User
                     </button>

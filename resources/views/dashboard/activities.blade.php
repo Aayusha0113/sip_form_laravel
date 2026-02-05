@@ -105,8 +105,11 @@ body {
 
 .admin-main {
     margin-left: 250px;
-    padding: 30px;
+    padding: 0px 30px;
     min-height: 100vh;
+}
+.admin-main h3{
+    padding: 0px
 }
 
 .content-card {
@@ -193,8 +196,8 @@ table tbody tr:nth-child(even) {
         <i class="fa fa-user-plus me-2"></i> Add User
     </a>
 
-    <a href="{{ route('dashboard.index') }}"
-       class="{{ request()->routeIs('dashboard.index') ? 'active' : '' }}">
+    <a href="{{ route('dashboard.user') }}"
+       class="{{ request()->routeIs('dashboard.user') ? 'active' : '' }}">
         <i class="fas fa-users"></i> Users
     </a>
 
@@ -235,6 +238,9 @@ table tbody tr:nth-child(even) {
 </div>
 
 <div class="admin-main">
+     <h3 class="fw-bold mb-4">
+    Welcome, {{ Auth::user()->username ?? Auth::user()->name }}
+</h3>
     <div class="content-card">
         <h4>User Activities</h4>
         <table>

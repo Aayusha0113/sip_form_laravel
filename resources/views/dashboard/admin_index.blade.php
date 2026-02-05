@@ -132,10 +132,20 @@
    MAIN CONTENT
 ========================= */
     .admin-main {
-        margin-left: 250px;
-        padding: 30px;
+        position: fixed;
+         left: 200px;
+        padding: 80px;
         min-height: 100vh;
     }
+         /* .admin-main {
+        position: fixed;
+        top: 0px;
+        left: 180px;
+        right: 0;
+        margin-left: 20px;
+        padding: 80px;
+        min-height: 100vh;
+    } */
 
     .admin-header {
         display: flex;
@@ -156,7 +166,7 @@
     .content-card {
         background: #ffffff;
         border-radius: 14px;
-        padding: 30px;
+        padding: 25px;
         margin-bottom: 25px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
     }
@@ -286,6 +296,7 @@
 
         .admin-topbar,
         .admin-main {
+           
             margin-left: 200px;
         }
 
