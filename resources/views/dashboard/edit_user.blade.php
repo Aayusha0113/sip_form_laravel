@@ -50,10 +50,10 @@
                 <label class="form-label">Permissions:</label>
                 <div class="permissions mb-4">
                     @php
-                        $user_permissions = explode(',', $user->permissions);
+                        $user_permissions = is_array($user->permissions) ? $user->permissions : explode(',', $user->permissions);
                     @endphp
                     
-                    @foreach($all_permissions as $perm)
+                    @foreach($allPermissions as $perm)
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="checkbox" 
                                    name="permissions[]" value="{{ $perm }}"

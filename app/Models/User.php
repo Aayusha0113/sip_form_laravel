@@ -17,14 +17,29 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $fillable = [
-        'name',
-        'email',
-        'username',
-        'password',
-        'role',
-        'permissions',
-    ];
+    public $timestamps = false;
+
+   protected $fillable = [
+    'username',
+    'password',
+    'role',
+    'permissions',
+    'created_at',
+];
+
+/**
+     * This "boot" function ensures created_at is filled automatically 
+     * even though $timestamps is set to false.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (!$model->created_at) {
+                $model->created_at = now();
+            }
+        });
+    }
 
     /**
      * The attributes that should be hidden for serialization.
@@ -44,14 +59,20 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+           'password' => 'hashed',
+            'permissions' => 'array', // Added this so Laravel handles the JSON/comma list for you
         ];
     }
 
     public function activities()
     {
         return $this->hasMany(UserActivity::class);
+    }
+
+    public function hasPermission($permission): bool
+    {
+        $permissions = $this->permissions ?? [];
+        return in_array($permission, $permissions);
     }
 
     public function isAdmin(): bool

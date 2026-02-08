@@ -47,12 +47,12 @@ Route::post('/companies/delete', [DashboardController::class, 'deleteCompany'])-
  Route::get('/users/{id}/edit', [DashboardController::class, 'edit'])->name('users.edit');
 
 // Update user (when Save Changes is clicked)
-// Route::put('/users/{id}', [DashboardController::class, 'update'])->name('users.update');
+Route::put('/users/{id}', [DashboardController::class, 'update'])->name('users.update');
 
 // Delete user (when Delete User is clicked)
-// Route::delete('/users/{id}', [DashboardController::class, 'destroy'])->name('users.destroy');
+Route::delete('/users/{id}', [DashboardController::class, 'destroy'])->name('users.destroy');
 
 
-// User-only dashboard
-Route::middleware(['auth', 'role:user'])->get('/user/dashboard', [DashboardController::class, 'user'])->name('user.dashboard');
+// User-only dashboard with role-based permissions
+Route::middleware(['auth', 'role:user'])->get('/user/dashboard', [DashboardController::class, 'userDashboard'])->name('user.dashboard');
 

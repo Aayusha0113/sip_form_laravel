@@ -394,8 +394,6 @@
             @csrf
             <input type="text" name="username" placeholder="Enter username" value="{{ old('username') }}" required>
             <input type="password" name="password" placeholder="Enter password" required>
-
-            <input type="email" name="email" placeholder="Email (optional)" value="{{ old('email') }}">
             <select name="role" required>
                 <option value="user" {{ old('role') === 'user' ? 'selected' : '' }}>User</option>
                 <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin</option>

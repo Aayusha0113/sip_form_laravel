@@ -95,7 +95,7 @@
     <button type="submit">Submit</button>
 </form>
 
-<p style="margin-top: 20px;"><a href="{{ route('login') }}">Staff Login</a></p>
+<p style="margin-top: 20px;"><a href="{{ route('login') }}">Login Page</a></p>
 
 @push('styles')
 <style>

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+<!-- @extends('layouts.app')
 
 @section('title', 'Details - ' . ($company->company_name ?? ''))
 
@@ -78,4 +78,4 @@ h2 { text-align: center; color: #0a3d62; margin-bottom: 25px; border-bottom: 2px
         <a href="{{ route('dashboard.index') }}">Go Back</a>
     </div>
 </div>
-@endsection
+@endsection -->

@@ -73,6 +73,37 @@ class DashboardController extends Controller
     // User dashboard view
 
 
+  // User dashboard view with role-based permissions
+    public function userDashboard()
+    {
+        $user = Auth::user();
+        
+        // Get user permissions
+        $userPermissions = $user->permissions ?? [];
+        
+        // Log user dashboard access
+        UserActivity::create([
+            'user_id' => $user->id,
+            'activity' => 'Accessed user dashboard',
+        ]);
+
+        // Fetch data based on permissions
+        $activities = [];
+        $allUsers = [];
+        
+        if (in_array('view_logs', $userPermissions)) {
+            $activities = UserActivity::with('user')
+                ->orderBy('activity_time', 'desc')
+                ->get();
+        }
+        
+        if (in_array('manage_users', $userPermissions)) {
+            $allUsers = User::orderBy('id', 'desc')->get();
+        }
+
+        return view('dashboard.user_dashboard', compact('userPermissions', 'activities', 'allUsers'));
+    }
+
   public function user()
     {
         $users = User::all(); // Get all users from database
@@ -90,8 +121,7 @@ class DashboardController extends Controller
             'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')],
             'password' => ['required', 'string', 'min:6'],
             'role'     => ['required', Rule::in(['admin', 'user'])],
-            'name'     => ['nullable', 'string', 'max:255'],
-            'email'    => ['nullable', 'email', 'max:255'],
+            
             'permissions' => ['nullable', 'array'],
         ]);
 
@@ -99,8 +129,6 @@ class DashboardController extends Controller
             'username' => $data['username'],
             'password' => Hash::make($data['password']),
             'role'     => $data['role'],
-            'name'     => $data['name'] ?? $data['username'],
-            'email'    => $data['email'] ?? null,
             'permissions' => !empty($data['permissions']) ? json_encode($data['permissions']) : null,
         ]);
 
@@ -234,6 +262,44 @@ class DashboardController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    public function edit($id)
+    {
+        $user = User::findOrFail($id);
+        $allPermissions = ['view_sip_docs','upload_docs','update_sip_docs','view_client_apps','view_logs','manage_users','update_client_apps'];
+        
+        return view('dashboard.edit_user', compact('user', 'allPermissions'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        
+        $data = $request->validate([
+            'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($id)],
+            'role'     => ['required', Rule::in(['admin', 'user'])],
+            'permissions' => ['nullable', 'array'],
+        ]);
+
+        $user->username = $data['username'];
+        $user->role = $data['role'];
+        $user->permissions = !empty($data['permissions']) ? json_encode($data['permissions']) : null;
+        
+        if ($request->filled('password')) {
+            $request->validate(['password' => ['string', 'min:6']]);
+            $user->password = Hash::make($request->password);
+        }
+        
+        $user->save();
+
+        // Log activity: updated user
+        UserActivity::create([
+            'user_id'  => Auth::id(),
+            'activity' => 'Updated user: ' . $user->username,
+        ]);
+
+        return redirect()->route('user.dashboard')->with('success', 'User updated successfully.');
     }
 
     private function normalizeSipForLookup($sip)
