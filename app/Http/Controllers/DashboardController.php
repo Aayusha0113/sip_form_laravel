@@ -73,45 +73,80 @@ class DashboardController extends Controller
     // User dashboard view
 
 
-  // User dashboard view with role-based permissions
-    public function userDashboard()
+    // User dashboard view with role-based permissions
+    public function userDashboard(Request $request)
     {
         $user = Auth::user();
-        
+
         // Get user permissions
-        $userPermissions = $user->permissions ?? [];
-        
-        // Log user dashboard access
+        // Convert JSON permissions string to array
+        $userPermissions = $user->permissions ? json_decode($user->permissions, true) : [];
+
+        // Log dashboard access
         UserActivity::create([
             'user_id' => $user->id,
             'activity' => 'Accessed user dashboard',
         ]);
 
+        // Handle add user functionality
+        if ($request->isMethod('post') && in_array('manage_users', $userPermissions) && $request->has('add_user')) {
+            $data = $request->validate([
+                'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')],
+                'password' => ['required', 'string', 'min:6'],
+                'role' => ['required', Rule::in(['admin', 'user'])],
+                'permissions' => ['nullable', 'array'],
+            ]);
+
+            $newUser = User::create([
+                'username' => $data['username'],
+                'password' => Hash::make($data['password']),
+                'role' => $data['role'],
+                'permissions' => !empty($data['permissions']) ? json_encode($data['permissions']) : null,
+            ]);
+
+            // Log activity
+            UserActivity::create([
+                'user_id' => $user->id,
+                'activity' => 'Created user: ' . $newUser->username,
+            ]);
+
+            return redirect()->route('user.dashboard')->with('success', 'User added successfully!');
+        }
+
         // Fetch data based on permissions
         $activities = [];
         $allUsers = [];
-        
-        if (in_array('view_logs', $userPermissions)) {
+
+        if (in_array('dashboard_activities', $userPermissions)) {
             $activities = UserActivity::with('user')
                 ->orderBy('activity_time', 'desc')
                 ->get();
         }
-        
+
         if (in_array('manage_users', $userPermissions)) {
             $allUsers = User::orderBy('id', 'desc')->get();
         }
 
-        return view('dashboard.user_dashboard', compact('userPermissions', 'activities', 'allUsers'));
+        // Full permissions list for checkbox rendering in Blade
+        $allPermissions = [
+            'dashboard_activities',
+            'upload_docs',
+            'update_sip_docs',
+            'view_client_apps',
+            'manage_users',
+            'update_client_apps',
+        ];
+
+        return view('dashboard.user_dashboard', compact('userPermissions', 'activities', 'allUsers', 'allPermissions'));
     }
 
-  public function user()
+    public function user()
     {
         $users = User::all(); // Get all users from database
         $section = 'users'; // Set section for conditional display
-        
+
         return view('dashboard.user', compact('users', 'section'));
     }
-
 
 
     // Handle admin add-user form
@@ -121,7 +156,7 @@ class DashboardController extends Controller
             'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')],
             'password' => ['required', 'string', 'min:6'],
             'role'     => ['required', Rule::in(['admin', 'user'])],
-            
+
             'permissions' => ['nullable', 'array'],
         ]);
 
@@ -267,15 +302,15 @@ class DashboardController extends Controller
     public function edit($id)
     {
         $user = User::findOrFail($id);
-        $allPermissions = ['view_sip_docs','upload_docs','update_sip_docs','view_client_apps','view_logs','manage_users','update_client_apps'];
-        
+        $allPermissions = ['view_sip_docs', 'upload_docs', 'update_sip_docs', 'view_client_apps', 'view_logs', 'manage_users', 'update_client_apps'];
+
         return view('dashboard.edit_user', compact('user', 'allPermissions'));
     }
 
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        
+
         $data = $request->validate([
             'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($id)],
             'role'     => ['required', Rule::in(['admin', 'user'])],
@@ -285,12 +320,12 @@ class DashboardController extends Controller
         $user->username = $data['username'];
         $user->role = $data['role'];
         $user->permissions = !empty($data['permissions']) ? json_encode($data['permissions']) : null;
-        
+
         if ($request->filled('password')) {
             $request->validate(['password' => ['string', 'min:6']]);
             $user->password = Hash::make($request->password);
         }
-        
+
         $user->save();
 
         // Log activity: updated user

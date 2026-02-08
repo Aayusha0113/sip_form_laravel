@@ -54,5 +54,5 @@ Route::delete('/users/{id}', [DashboardController::class, 'destroy'])->name('use
 
 
 // User-only dashboard with role-based permissions
-Route::middleware(['auth', 'role:user'])->get('/user/dashboard', [DashboardController::class, 'userDashboard'])->name('user.dashboard');
+Route::middleware(['auth', 'role:user'])->match(['get', 'post'], '/user/dashboard', [DashboardController::class, 'userDashboard'])->name('user.dashboard');
 
