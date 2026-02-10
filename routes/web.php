@@ -56,3 +56,39 @@ Route::delete('/users/{id}', [DashboardController::class, 'destroy'])->name('use
 // User-only dashboard with role-based permissions
 Route::middleware(['auth', 'role:user'])->match(['get', 'post'], '/user/dashboard', [DashboardController::class, 'userDashboard'])->name('user.dashboard');
 
+// User update client applications
+Route::middleware(['auth', 'role:user'])->match(['get', 'post'], 'user/client-apps', [DashboardController::class, 'updateclientApps'])->name('user.update_client_apps');
+
+// User-only view client applications
+Route::middleware(['auth', 'role:user'])->group(function () {
+    Route::get('/user/view-clients', [DashboardController::class, 'viewClientApps'])->name('user.view_client_apps');
+
+    // View single application
+    Route::get('/user/view-client/{id}', [DashboardController::class, 'viewApplication'])->name('applications.view');
+
+    // Estimate for an application
+    Route::get('/user/estimate-client/{id}', [DashboardController::class, 'estimateApplication'])->name('applications.estimate');
+
+    // Letter for an application
+    Route::get('/user/letter-client/{id}', [DashboardController::class, 'letterApplication'])->name('applications.letter');
+});
+// for upload docs button in dashboard  
+Route::post('/dashboard/upload-docs', [DashboardController::class, 'uploadDocs'])
+    ->name('dashboard.upload_docs')
+    ->middleware(['auth']);
+
+
+    // View SIP docs
+// Route::get('/sip/view-only', function () {
+//     return view('sip.view_only');
+// })->name('sip.view_only')->middleware('auth');
+
+// Upload docs
+// Route::get('/dashboard/upload-docs', [DashboardController::class, 'uploadDocs'])
+//     ->name('dashboard.upload_docs')
+//     ->middleware('auth');
+
+// Admin / update client apps
+// Route::get('/admin/client-apps', [AdminController::class, 'clientApps'])
+//     ->name('admin.client_apps')
+//     ->middleware(['auth', 'role:admin']);

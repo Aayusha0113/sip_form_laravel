@@ -10,6 +10,7 @@ use App\Models\UserActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
 
@@ -140,6 +141,87 @@ class DashboardController extends Controller
         return view('dashboard.user_dashboard', compact('userPermissions', 'activities', 'allUsers', 'allPermissions'));
     }
 
+// Show all client applications
+public function viewClientApps()
+{
+    $user = Auth::user();
+
+    UserActivity::create([
+        'user_id' => $user->id,
+        'activity' => 'Viewed client applications',
+    ]);
+
+    $applications = Application::orderBy('id', 'desc')->get();
+
+    return view('dashboard.view_client', compact('applications'));
+}
+
+// View single application details
+public function viewApplication($id)
+{
+    $user = Auth::user();
+    $application = Application::findOrFail($id);
+
+    UserActivity::create([
+        'user_id' => $user->id,
+        'activity' => "Viewed application ID {$id}",
+    ]);
+
+    return view('dashboard.application_view', compact('application'));
+}
+
+// Show estimate for a single application
+public function estimateApplication($id)
+{
+    $user = Auth::user();
+    $application = Application::findOrFail($id);
+
+    UserActivity::create([
+        'user_id' => $user->id,
+        'activity' => "Viewed estimate for application ID {$id}",
+    ]);
+
+    return view('dashboard.application_estimate', compact('application'));
+}
+
+// Show letter for a single application
+public function letterApplication($id)
+{
+    $user = Auth::user();
+    $application = Application::findOrFail($id);
+
+    UserActivity::create([
+        'user_id' => $user->id,
+        'activity' => "Viewed letter for application ID {$id}",
+    ]);
+
+    return view('dashboard.application_letter', compact('application'));
+}
+
+
+public function uploadDocs(Request $request)
+{
+    $request->validate([
+        'sip_number' => 'required|string',
+        'document'   => 'required|file|mimes:pdf,doc,docx,xls,xlsx|max:10240',
+    ]);
+
+    $sip = $request->sip_number;
+
+    // Create folder per SIP
+    $path = "sip_docs/{$sip}";
+
+    // Store file
+    $filePath = $request->file('document')->store($path, 'public');
+
+    // OPTIONAL: Save to DB later if you want
+    // DB::table('sip_documents')->insert([...]);
+
+    return back()->with('message', 'Document uploaded successfully.');
+}
+
+
+
     public function user()
     {
         $users = User::all(); // Get all users from database
@@ -175,6 +257,9 @@ class DashboardController extends Controller
 
         return redirect()->route('admin.dashboard')->with('success', 'User created successfully.');
     }
+
+
+
     public function users_listing()
     {
         $users = User::all();
@@ -344,4 +429,58 @@ class DashboardController extends Controller
         $sip = preg_replace('/^sip\s*/i', '', $sip);
         return str_replace(' ', '', $sip);
     }
-}
+    
+    
+    public function updateclientApps(Request $request)
+    {
+        $user = Auth::user();
+        // Log page view only on GET
+        if ($request->isMethod('get') && $user) {
+            UserActivity::create([
+                'user_id' => $user->id,
+                'activity' => 'Opened Admin Applications Dashboard',
+            ]);
+        }
+
+        // Handle status update (per-row)
+        if ($request->isMethod('post') && $request->has('update_status')) {
+            $id = $request->input('id');
+            $newStatus = $request->input('status');
+            $app = Application::find($id);
+            if ($app) {
+                $app->status = $newStatus;
+                $app->save();
+
+                if ($user) {
+                    UserActivity::create([
+                        'user_id' => $user->id,
+                        'activity' => "Updated status of application ID {$id} to {$newStatus}",
+                    ]);
+                }
+                return redirect()->route('user.update_client_apps')->with('success', 'Status updated.');
+            }
+            return redirect()->route('user.update_client_apps')->with('error', 'Application not found.');
+        }
+
+        // Handle delete selected (bulk)
+        if ($request->isMethod('post') && $request->has('delete_selected')) {
+            $ids = $request->input('selected', []);
+            if (!empty($ids)) {
+                Application::destroy($ids);
+                if ($user) {
+                    UserActivity::create([
+                        'user_id' => $user->id,
+                        'activity' => 'Deleted applications with IDs: ' . implode(', ', $ids),
+                    ]);
+                }
+                return redirect()->route('user.update_client_apps')->with('success', 'Selected applications deleted.');
+            }
+            return redirect()->route('user.update_client_apps')->with('error', 'No applications selected.');
+        }
+
+        // Fetch apps
+        $applications = Application::orderBy('id', 'desc')->get();
+
+        return view('dashboard.update_client_apps', compact('applications'));
+    }
+    }

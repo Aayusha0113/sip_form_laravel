@@ -7,14 +7,46 @@
 <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
 <style>
-    body { background: #f4f5f7; font-family: 'Segoe UI', sans-serif; }
-    .card { border-radius: 12px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    .card-header { display: flex; align-items: center; margin-bottom: 20px; }
-    .logo { width: 80px; margin-right: 15px; }
-    .header-text h3 { margin:0; font-size:1.5rem; }
-    .header-text h5 { margin:0; font-size:1rem; color:#555; }
+    body {
+        background: #f4f5f7;
+        font-family: 'Segoe UI', sans-serif;
+    }
 
-    .action-btns { display: flex; flex-direction: column; align-items: center; margin-top: 20px; }
+    .card {
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .logo {
+        width: 80px;
+        margin-right: 15px;
+    }
+
+    .header-text h3 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .header-text h5 {
+        margin: 0;
+        font-size: 1rem;
+        color: #555;
+    }
+
+    .action-btns {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+    }
+
     .action-btns button {
         margin: 5px 0;
         width: 260px;
@@ -25,17 +57,54 @@
         border-radius: 6px;
         cursor: pointer;
     }
-    .action-btns button:hover { background-color: #3b78c0; }
-    .section-btn.active { background-color: #375a7f; }
 
-    .section { margin-top: 20px; display: none; padding-top: 15px; border-top: 1px solid #ddd; }
+    .action-btns button:hover {
+        background-color: #3b78c0;
+    }
 
-    .user-cards { display: flex; flex-wrap: wrap; gap: 15px; }
-    .user-card { width: 220px; border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
-    .badge-role { background-color: #555; color: white; }
-    .badge-perm { background-color: #e0e0e0; color: #555; }
-    .btn-edit { background-color: #ffc107; color: #000; border: none; }
-    .btn-edit:hover { background-color: #e0a800; }
+    .section-btn.active {
+        background-color: #375a7f;
+    }
+
+    .section {
+        margin-top: 20px;
+        display: none;
+        padding-top: 15px;
+        border-top: 1px solid #ddd;
+    }
+
+    .user-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .user-card {
+        width: 220px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 12px;
+    }
+
+    .badge-role {
+        background-color: #555;
+        color: white;
+    }
+
+    .badge-perm {
+        background-color: #e0e0e0;
+        color: #555;
+    }
+
+    .btn-edit {
+        background-color: #ffc107;
+        color: #000;
+        border: none;
+    }
+
+    .btn-edit:hover {
+        background-color: #e0a800;
+    }
 </style>
 @endpush
 
@@ -54,21 +123,30 @@
 
         <!-- Flash Messages -->
         @if(session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success">{{ session('success') }}</div>
         @endif
 
         @if(session('error'))
-            <div class="alert alert-danger">{{ session('error') }}</div>
+        <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
-        <!-- Action Buttons -->
-        <div class="action-btns">
-            @foreach($userPermissions as $permission)
-                <button class="section-btn" data-target="{{ $permission }}">
-                    {{ ucfirst(str_replace('_', ' ', $permission)) }}
-                </button>
-            @endforeach
-        </div>
+      <!-- Action Buttons -->
+<div class="action-btns">
+    @foreach($userPermissions as $permission)
+
+        @if($permission === 'update_client_apps')
+            <button onclick="window.location.href='{{ route('user.update_client_apps') }}'">
+                {{ ucfirst(str_replace('_',' ',$permission)) }}
+            </button>
+        @else
+            <button class="section-btn" data-target="{{ $permission }}">
+                {{ ucfirst(str_replace('_', ' ', $permission)) }}
+            </button>
+        @endif
+
+    @endforeach
+</div>
+
 
         <!-- USER ACTIVITIES -->
         @if(in_array('dashboard_activities', $userPermissions))
@@ -85,12 +163,12 @@
                 </thead>
                 <tbody>
                     @foreach($activities as $activity)
-                        <tr>
-                            <td>{{ $activity->id }}</td>
-                            <td>{{ $activity->user->username }}</td>
-                            <td>{{ $activity->activity }}</td>
-                            <td>{{ $activity->activity_time }}</td>
-                        </tr>
+                    <tr>
+                        <td>{{ $activity->id }}</td>
+                        <td>{{ $activity->user->username }}</td>
+                        <td>{{ $activity->activity }}</td>
+                        <td>{{ $activity->activity_time }}</td>
+                    </tr>
                     @endforeach
                 </tbody>
             </table>
@@ -100,7 +178,7 @@
         <!-- UPLOAD DOCS -->
         @if(in_array('upload_docs', $userPermissions))
         <div id="upload_docs" class="section">
-            <p>Upload Documents section coming soon...</p>
+            <a href="{{ route('dashboard.upload_docs') }}" class="btn btn-primary">Upload Documents</a>
         </div>
         @endif
 
@@ -114,9 +192,7 @@
         <!-- VIEW CLIENT APPS -->
         @if(in_array('view_client_apps', $userPermissions))
         <div id="view_client_apps" class="section">
-            <a href="{{ asset('View_client.php') }}" class="btn btn-primary">
-                Go to Client Apps
-            </a>
+            <a href="{{ route('user.view_client_apps') }}" class="btn btn-primary">View Client Applications</a>
         </div>
         @endif
 
@@ -126,7 +202,7 @@
             <h4 class="fw-bold mb-3">Manage Users</h4>
 
             <!-- Add User -->
-            <form method="POST" action="{{ route('users.store') }}">
+            <form method="POST" action="{{ route('admin.users.store') }}">
                 @csrf
 
                 <div class="row mb-3">
@@ -145,10 +221,10 @@
 
                 <label>Permissions:</label><br>
                 @foreach($allPermissions as $perm)
-                    <label class="mx-2">
-                        <input type="checkbox" name="permissions[]" value="{{ $perm }}">
-                        {{ $perm }}
-                    </label>
+                <label class="mx-2">
+                    <input type="checkbox" name="permissions[]" value="{{ $perm }}">
+                    {{ $perm }}
+                </label>
                 @endforeach
 
                 <br><br>
@@ -160,20 +236,20 @@
             <!-- User Cards -->
             <div class="user-cards">
                 @foreach($allUsers as $user)
-                    <div class="user-card">
-                        <h6>{{ $user->username }}</h6>
-                        <span class="badge badge-role">{{ ucfirst($user->role) }}</span><br><br>
+                <div class="user-card">
+                    <h6>{{ $user->username }}</h6>
+                    <span class="badge badge-role">{{ ucfirst($user->role) }}</span><br><br>
 
-                        Permissions:<br>
-                        @foreach($user->permissions ?? [] as $perm)
-                            <span class="badge badge-perm">{{ $perm }}</span>
-                        @endforeach
+                    Permissions:<br>
+                    @foreach(json_decode($user->permissions, true) ?? [] as $perm)
+                    <span class="badge badge-perm">{{ $perm }}</span>
+                    @endforeach
 
-                        <br><br>
-                        <a href="{{ route('users.edit', $user->id) }}" class="btn btn-edit">
-                            Edit
-                        </a>
-                    </div>
+                    <br><br>
+                    <a href="{{ route('users.edit', $user->id) }}" class="btn btn-edit">
+                        Edit
+                    </a>
+                </div>
                 @endforeach
             </div>
         </div>
@@ -189,23 +265,23 @@
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-$(function () {
-    let tableInitialized = false;
+    $(function() {
+        let tableInitialized = false;
 
-    $('.section-btn').on('click', function () {
-        const target = $(this).data('target');
+        $('.section-btn').on('click', function() {
+            const target = $(this).data('target');
 
-        $('.section-btn').removeClass('active');
-        $(this).addClass('active');
+            $('.section-btn').removeClass('active');
+            $(this).addClass('active');
 
-        $('.section').not('#' + target).slideUp();
-        $('#' + target).slideToggle(function () {
-            if (target === 'dashboard_activities' && !tableInitialized) {
-                $('#activitiesTable').DataTable();
-                tableInitialized = true;
-            }
+            $('.section').not('#' + target).slideUp();
+            $('#' + target).slideToggle(function() {
+                if (target === 'dashboard_activities' && !tableInitialized) {
+                    $('#activitiesTable').DataTable();
+                    tableInitialized = true;
+                }
+            });
         });
     });
-});
 </script>
 @endsection
