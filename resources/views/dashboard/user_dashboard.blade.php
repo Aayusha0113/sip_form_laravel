@@ -134,14 +134,32 @@
 <div class="action-btns">
     @foreach($userPermissions as $permission)
 
-        @if($permission === 'update_client_apps')
+        @if($permission === 'view_sip_docs')
+            <button onclick="window.location.href='{{ route('user.view_sip_docs') }}'">
+                View SIP Docs
+            </button>
+
+        @elseif($permission === 'upload_docs')
+            {{-- THIS MUST BE A GET PAGE, NOT dashboard.upload_docs --}}
+            <button onclick="window.location.href='{{ route('user.upload_docs') }}'">
+                Upload Documents
+            </button>
+
+        @elseif($permission === 'update_sip_docs')
+            <button onclick="window.location.href='{{ route('user.update_sip_docs') }}'">
+                Update SIP Docs
+            </button>
+
+        @elseif($permission === 'view_client_apps')
+            <button onclick="window.location.href='{{ route('user.view_client_apps') }}'">
+                View Client Applications
+            </button>
+
+        @elseif($permission === 'update_client_apps')
             <button onclick="window.location.href='{{ route('user.update_client_apps') }}'">
-                {{ ucfirst(str_replace('_',' ',$permission)) }}
+                Update Client Applications
             </button>
-        @else
-            <button class="section-btn" data-target="{{ $permission }}">
-                {{ ucfirst(str_replace('_', ' ', $permission)) }}
-            </button>
+
         @endif
 
     @endforeach
@@ -149,8 +167,8 @@
 
 
         <!-- USER ACTIVITIES -->
-        @if(in_array('dashboard_activities', $userPermissions))
-        <div id="dashboard_activities" class="section">
+        @if(in_array('view_logs', $userPermissions))
+        <div id="view_logs" class="section">
             <h4 class="fw-bold mb-3">User Activities</h4>
             <table class="table table-striped" id="activitiesTable">
                 <thead>
@@ -161,7 +179,7 @@
                         <th>Time</th>
                     </tr>
                 </thead>
-                <tbody>
+               <tbody>
                     @foreach($activities as $activity)
                     <tr>
                         <td>{{ $activity->id }}</td>
@@ -265,18 +283,17 @@
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    $(function() {
-        let tableInitialized = false;
+    $(document).ready(function(){
+        var tableInitialized = false;
 
-        $('.section-btn').on('click', function() {
-            const target = $(this).data('target');
-
+        $('.section-btn').click(function(){
+            var target = $(this).data('target');
             $('.section-btn').removeClass('active');
             $(this).addClass('active');
 
-            $('.section').not('#' + target).slideUp();
-            $('#' + target).slideToggle(function() {
-                if (target === 'dashboard_activities' && !tableInitialized) {
+            $('.section').not('#'+target).slideUp();
+            $('#' + target).slideToggle(function(){
+                if(target === 'view_logs' && !tableInitialized && $(this).is(':visible')){
                     $('#activitiesTable').DataTable();
                     tableInitialized = true;
                 }

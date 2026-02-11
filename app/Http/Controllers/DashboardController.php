@@ -36,21 +36,25 @@ class DashboardController extends Controller
         return view('dashboard.index', compact('companies', 'totalCompanies', 'totalSIPs', 'totalFiles'));
     }
 
-    public function show(string $sip)
-    {
-        $sipNormalized = $this->normalizeSipForLookup($sip);
-        $company = DashboardCompany::whereRaw("
-            REPLACE(
-                CASE
-                    WHEN UPPER(LEFT(sip_number, 3)) = 'SIP' THEN SUBSTRING(sip_number, 4)
-                    ELSE sip_number
-                END,
-                ' ', ''
-            ) = ?
-        ", [$sipNormalized])->firstOrFail();
+  public function show(string $sip)
+{
+    $sipNormalized = $this->normalizeSipForLookup($sip);
 
-        return view('dashboard.show', compact('company'));
-    }
+    $company = DashboardCompany::whereRaw("
+        REPLACE(
+            CASE
+                WHEN UPPER(LEFT(sip_number, 3)) = 'SIP' THEN SUBSTRING(sip_number, 4)
+                ELSE sip_number
+            END,
+            ' ', ''
+        ) = ?
+    ", [$sipNormalized])->firstOrFail();
+
+    $documents = Storage::disk('public')->files("sip_docs/{$company->sip_number}");
+
+    return view('dashboard.show', compact('company', 'documents'));
+}
+
 
     // Admin dashboard view
     public function admin()
@@ -78,12 +82,11 @@ class DashboardController extends Controller
     public function userDashboard(Request $request)
     {
         $user = Auth::user();
-
-        // Get user permissions
-        // Convert JSON permissions string to array
-        $userPermissions = $user->permissions ? json_decode($user->permissions, true) : [];
-
-        // Log dashboard access
+        
+         // Decode permissions JSON to array
+    $userPermissions = $user->permissions ? json_decode($user->permissions, true) : [];
+        
+        // Log user dashboard access
         UserActivity::create([
             'user_id' => $user->id,
             'activity' => 'Accessed user dashboard',
@@ -105,7 +108,7 @@ class DashboardController extends Controller
                 'permissions' => !empty($data['permissions']) ? json_encode($data['permissions']) : null,
             ]);
 
-            // Log activity
+            // Log activity: created user
             UserActivity::create([
                 'user_id' => $user->id,
                 'activity' => 'Created user: ' . $newUser->username,
@@ -117,15 +120,32 @@ class DashboardController extends Controller
         // Fetch data based on permissions
         $activities = [];
         $allUsers = [];
-
+        $companies = [];
+        $applications = [];
+        
         if (in_array('dashboard_activities', $userPermissions)) {
             $activities = UserActivity::with('user')
                 ->orderBy('activity_time', 'desc')
                 ->get();
         }
-
+        
         if (in_array('manage_users', $userPermissions)) {
             $allUsers = User::orderBy('id', 'desc')->get();
+        }
+
+        if (in_array('view_sip_docs', $userPermissions)) {
+            $companies = DashboardCompany::orderByRaw("
+                CAST(
+                    CASE
+                        WHEN UPPER(LEFT(sip_number, 3)) = 'SIP' THEN SUBSTRING(sip_number, 4)
+                        ELSE sip_number
+                    END AS UNSIGNED
+                ) ASC
+            ")->get();
+        }
+
+        if (in_array('view_client_apps', $userPermissions)) {
+            $applications = Application::orderBy('id', 'desc')->get();
         }
 
         // Full permissions list for checkbox rendering in Blade
@@ -199,26 +219,117 @@ public function letterApplication($id)
 }
 
 
-public function uploadDocs(Request $request)
+ // Upload Documents
+   public function uploadDocs(Request $request)
 {
-    $request->validate([
-        'sip_number' => 'required|string',
-        'document'   => 'required|file|mimes:pdf,doc,docx,xls,xlsx|max:10240',
+    $user = Auth::user();
+
+    // Decode permissions JSON to array
+    $userPermissions = $user->permissions ? json_decode($user->permissions, true) : [];
+
+    // Check permission
+    if (!in_array('upload_docs', $userPermissions)) {
+        abort(403, 'Unauthorized access.');
+    }
+
+    // Handle POST requests for company creation and document upload
+    if ($request->isMethod('post')) {
+        // Handle document upload
+        if ($request->hasFile('documents')) {
+            $request->validate([
+                'documents.*' => 'file|mimes:pdf,doc,docx,xls,xlsx|max:10240',
+                'sip_number' => 'required|string',
+            ]);
+
+            $sipNumber = $request->sip_number;
+            $documents = $request->file('documents');
+            
+            foreach ($documents as $document) {
+                $path = $document->store("sip_docs/{$sipNumber}", 'public');
+                
+                // Log document upload
+                UserActivity::create([
+                    'user_id' => $user->id,
+                    'activity' => "Uploaded document: {$document->getClientOriginalName()} for SIP: {$sipNumber}",
+                ]);
+            }
+            
+            return response('Documents uploaded successfully!');
+        }
+        
+        // Handle company creation/update
+        $request->validate([
+            'sip_number' => 'required|string',
+            'service_dn' => 'nullable|string',
+            'customer_name' => 'required|string',
+            'sip_type' => 'nullable|string',
+            'customer_type' => 'nullable|string',
+            'name_of_proprietor' => 'nullable|string',
+            'company_reg_no' => 'nullable|string',
+            'reg_date' => 'nullable|date',
+            'pan_no' => 'nullable|string',
+            'province_perm' => 'nullable|string',
+            'district_perm' => 'nullable|string',
+            'municipality_perm' => 'nullable|string',
+            'ward_perm' => 'nullable|string',
+            'tole_perm' => 'nullable|string',
+            'province_install' => 'nullable|string',
+            'district_install' => 'nullable|string',
+            'municipality_install' => 'nullable|string',
+            'ward_install' => 'nullable|string',
+            'tole_install' => 'nullable|string',
+            'landline' => 'nullable|string',
+            'mobile' => 'nullable|string',
+            'email' => 'nullable|email',
+            'website' => 'nullable|string',
+            'objectives' => 'nullable|string',
+            'purpose' => 'nullable|string',
+            'sessions' => 'nullable|integer|min:0',
+            'authorized_signature' => 'nullable|string',
+            'signature_name' => 'nullable|string',
+            'position' => 'nullable|string',
+            'signature_date' => 'nullable|date',
+            'seal' => 'nullable|string',
+        ]);
+
+        // Check if company exists
+        $existingCompany = DashboardCompany::where('sip_number', $request->sip_number)->first();
+        
+        if ($existingCompany) {
+            // Update existing company
+            $existingCompany->update($request->all());
+            
+            UserActivity::create([
+                'user_id' => $user->id,
+                'activity' => "Updated company: {$request->customer_name} (SIP: {$request->sip_number})",
+            ]);
+            
+            return response('Company updated successfully!');
+        } else {
+            // Create new company
+            DashboardCompany::create($request->all());
+            
+            UserActivity::create([
+                'user_id' => $user->id,
+                'activity' => "Added new company: {$request->customer_name} (SIP: {$request->sip_number})",
+            ]);
+            
+            return response('Company saved successfully!');
+        }
+    }
+
+    // Log access for GET requests
+    UserActivity::create([
+        'user_id' => $user->id,
+        'activity' => 'Accessed upload documents',
     ]);
 
-    $sip = $request->sip_number;
+    // If you want to edit a company, default null
+    $editCompany = null;
 
-    // Create folder per SIP
-    $path = "sip_docs/{$sip}";
-
-    // Store file
-    $filePath = $request->file('document')->store($path, 'public');
-
-    // OPTIONAL: Save to DB later if you want
-    // DB::table('sip_documents')->insert([...]);
-
-    return back()->with('message', 'Document uploaded successfully.');
+    return view('dashboard.upload_docs', compact('editCompany'));
 }
+
 
 
 
@@ -422,65 +533,123 @@ public function uploadDocs(Request $request)
         return redirect()->route('user.dashboard')->with('success', 'User updated successfully.');
     }
 
-    private function normalizeSipForLookup($sip)
+    // View SIP Documents
+    // View SIP Documents (USER VIEW)
+public function viewSipDocs()
+{
+    $user = Auth::user();
+
+    UserActivity::create([
+        'user_id' => $user->id,
+        'activity' => 'Viewed SIP documents',
+    ]);
+
+    $companies = DashboardCompany::orderByRaw("
+        CAST(
+            CASE
+                WHEN UPPER(LEFT(sip_number, 3)) = 'SIP' THEN SUBSTRING(sip_number, 4)
+                ELSE sip_number
+            END AS UNSIGNED
+        ) ASC
+    ")->get();
+
+    // ADD THESE (IMPORTANT)
+    $totalCompanies = DashboardCompany::distinct('company_name')->count('company_name');
+    $totalSIPs = DashboardCompany::distinct('sip_number')->count('sip_number');
+    $totalFiles = DashboardCompany::count();
+
+    return view('dashboard.view_sip_docs', compact(
+        'companies',
+        'totalCompanies',
+        'totalSIPs',
+        'totalFiles'
+    ));
+}
+
+
+    
+
+    // Update SIP Documents
+    public function updateSipDocs()
+    {
+        $user = Auth::user();
+        
+        UserActivity::create([
+            'user_id' => $user->id,
+            'activity' => 'Accessed update SIP documents',
+        ]);
+
+        $companies = DashboardCompany::orderByRaw("
+            CAST(
+                CASE
+                    WHEN UPPER(LEFT(sip_number, 3)) = 'SIP' THEN SUBSTRING(sip_number, 4)
+                    ELSE sip_number
+                END AS UNSIGNED
+            ) ASC
+        ")->get();
+
+        return view('dashboard.update_sip_docs', compact('companies'));
+    }
+
+     private function normalizeSipForLookup($sip)
     {
         $sip = trim($sip ?? '');
         if ($sip === '') return '';
         $sip = preg_replace('/^sip\s*/i', '', $sip);
         return str_replace(' ', '', $sip);
     }
-    
-    
-    public function updateclientApps(Request $request)
-    {
-        $user = Auth::user();
-        // Log page view only on GET
-        if ($request->isMethod('get') && $user) {
+
+    // Update Client Applications
+    public function updateClientApps(Request $request)
+{
+    $user = Auth::user();
+
+    UserActivity::create([
+        'user_id' => $user->id,
+        'activity' => 'Accessed update client applications',
+    ]);
+
+    // Update status
+    if ($request->has('update_status')) {
+        $app = Application::find($request->id);
+
+        if ($app) {
+            $app->status = $request->status;
+            $app->save();
+
             UserActivity::create([
                 'user_id' => $user->id,
-                'activity' => 'Opened Admin Applications Dashboard',
+                'activity' => "Updated status of application ID {$app->id}",
             ]);
+
+            return back()->with('success', 'Status updated successfully.');
         }
-
-        // Handle status update (per-row)
-        if ($request->isMethod('post') && $request->has('update_status')) {
-            $id = $request->input('id');
-            $newStatus = $request->input('status');
-            $app = Application::find($id);
-            if ($app) {
-                $app->status = $newStatus;
-                $app->save();
-
-                if ($user) {
-                    UserActivity::create([
-                        'user_id' => $user->id,
-                        'activity' => "Updated status of application ID {$id} to {$newStatus}",
-                    ]);
-                }
-                return redirect()->route('user.update_client_apps')->with('success', 'Status updated.');
-            }
-            return redirect()->route('user.update_client_apps')->with('error', 'Application not found.');
-        }
-
-        // Handle delete selected (bulk)
-        if ($request->isMethod('post') && $request->has('delete_selected')) {
-            $ids = $request->input('selected', []);
-            if (!empty($ids)) {
-                Application::destroy($ids);
-                if ($user) {
-                    UserActivity::create([
-                        'user_id' => $user->id,
-                        'activity' => 'Deleted applications with IDs: ' . implode(', ', $ids),
-                    ]);
-                }
-                return redirect()->route('user.update_client_apps')->with('success', 'Selected applications deleted.');
-            }
-            return redirect()->route('user.update_client_apps')->with('error', 'No applications selected.');
-        }
-
-        // Fetch apps
-        $applications = Application::orderBy('id', 'desc')->get();
-
-        return view('dashboard.update_client_apps', compact('applications'));
     }
+
+    // Delete selected
+    if ($request->has('delete_selected')) {
+        $ids = $request->input('selected', []);
+
+        if (!empty($ids)) {
+            Application::destroy($ids);
+
+            UserActivity::create([
+                'user_id' => $user->id,
+                'activity' => 'Deleted applications: ' . implode(', ', $ids),
+            ]);
+
+            return back()->with('success', 'Applications deleted.');
+        }
     }
+
+    $applications = Application::orderBy('id', 'desc')->get();
+    return view('dashboard.update_client_apps', compact('applications'));
+}
+
+
+
+
+}
+
+
+

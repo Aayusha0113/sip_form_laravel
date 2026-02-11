@@ -18,8 +18,12 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Protected: admin or user (shared SIP listing)
 Route::middleware(['auth', 'role:admin,user'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
-    Route::get('/dashboard/{sip}', [DashboardController::class, 'show'])->whereNumber('sip')->name('dashboard.show');
+    Route::get('/dashboard/show/{sip}', [DashboardController::class, 'show'])
+    ->name('dashboard.show');
+
 });
+
+
 
 
 // Admin-only dashboard & user management
@@ -56,6 +60,15 @@ Route::delete('/users/{id}', [DashboardController::class, 'destroy'])->name('use
 // User-only dashboard with role-based permissions
 Route::middleware(['auth', 'role:user'])->match(['get', 'post'], '/user/dashboard', [DashboardController::class, 'userDashboard'])->name('user.dashboard');
 
+// User permission-based routes
+Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
+    Route::get('/view-sip-docs', [DashboardController::class, 'viewSipDocs'])->name('view_sip_docs');
+    Route::match(['get', 'post'], '/upload-docs', [DashboardController::class, 'uploadDocs'])->name('upload_docs');
+    Route::get('/update-sip-docs', [DashboardController::class, 'updateSipDocs'])->name('update_sip_docs');
+    Route::get('/view-client-apps', [DashboardController::class, 'viewClientApps'])->name('view_client_apps');
+    Route::match(['get', 'post'], '/update-client-apps', [DashboardController::class, 'updateClientApps'])->name('update_client_apps');
+});
+
 // User update client applications
 Route::middleware(['auth', 'role:user'])->match(['get', 'post'], 'user/client-apps', [DashboardController::class, 'updateclientApps'])->name('user.update_client_apps');
 
@@ -78,17 +91,3 @@ Route::post('/dashboard/upload-docs', [DashboardController::class, 'uploadDocs']
     ->middleware(['auth']);
 
 
-    // View SIP docs
-// Route::get('/sip/view-only', function () {
-//     return view('sip.view_only');
-// })->name('sip.view_only')->middleware('auth');
-
-// Upload docs
-// Route::get('/dashboard/upload-docs', [DashboardController::class, 'uploadDocs'])
-//     ->name('dashboard.upload_docs')
-//     ->middleware('auth');
-
-// Admin / update client apps
-// Route::get('/admin/client-apps', [AdminController::class, 'clientApps'])
-//     ->name('admin.client_apps')
-//     ->middleware(['auth', 'role:admin']);
