@@ -26,23 +26,38 @@ Route::middleware(['auth', 'role:admin,user'])->group(function () {
 
 
 
-// Admin-only dashboard & user management
+// Admin-only dashboard & user// Admin-only routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
-    Route::post('/users', [DashboardController::class, 'storeUser'])->name('users.store');
-    Route::match(['get', 'post'], '/client-apps', [DashboardController::class, 'clientApps'])->name('client_apps');
-   
-// AJAX delete company (admin)
-Route::post('/companies/delete', [DashboardController::class, 'deleteCompany'])->name('companies.delete');
-    // Admin activities page
     Route::get('/activities', [DashboardController::class, 'activities'])->name('activities');
+    Route::get('/client-apps', [DashboardController::class, 'clientApps'])->name('client_apps');
+    
+    // User management routes
+    Route::get('/users', [DashboardController::class, 'user'])->name('users');
+    Route::post('/users', [DashboardController::class, 'storeUser'])->name('users.store');
+    Route::get('/users/{id}/edit', [DashboardController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{id}', [DashboardController::class, 'update'])->name('users.update');
+    Route::delete('/users/{id}', [DashboardController::class, 'destroy'])->name('users.destroy');
+    
+    // Company management routes
+    Route::post('/companies/delete', [DashboardController::class, 'deleteCompany'])->name('companies.delete');
+    
+   
 });
 
-//for user button in dashboard
-//Route::get('/users', [DashboardController::class, 'user'])->name('users.users_listing');
-// User dashboard with cards view
-//  Route::get('/user', [DashboardController::class, 'user'])->name('user');
-// Route::get('/user/{id}/edit_user', [DashboardController::class, 'edit'])->name('edit_user');
+// Admin-only routes (legacy)
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
+    Route::get('/admin/activities', [DashboardController::class, 'activities'])->name('admin.activities');
+    Route::get('/admin/client-apps', [DashboardController::class, 'clientApps'])->name('admin.client_apps');
+});
+
+// Dashboard routes (accessible by both admin and user)
+Route::middleware(['auth'])->prefix('dashboard')->name('dashboard.')->group(function () {
+    Route::get('/', [DashboardController::class, 'index'])->name('index');
+    Route::get('/import', [DashboardController::class, 'importForm'])->name('import');
+    Route::post('/import', [DashboardController::class, 'importSubmit'])->name('import.submit');
+});
 
 // User listing (cards view)
  Route::get('/dashboard/user', [DashboardController::class, 'user'])->name('dashboard.user')->middleware('auth');
@@ -67,6 +82,9 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(f
     Route::get('/update-sip-docs', [DashboardController::class, 'updateSipDocs'])->name('update_sip_docs');
     Route::get('/view-client-apps', [DashboardController::class, 'viewClientApps'])->name('view_client_apps');
     Route::match(['get', 'post'], '/update-client-apps', [DashboardController::class, 'updateClientApps'])->name('update_client_apps');
+    Route::match(['get', 'post'], '/view-documents', [DashboardController::class, 'viewDocuments'])->name('view_documents');
+    // Route::get('/import', [DashboardController::class, 'importForm'])->name('import');
+    // Route::post('/import', [DashboardController::class, 'importSubmit'])->name('import.submit');
 });
 
 // User update client applications

@@ -519,7 +519,7 @@
 @endpush
 
 @section('content')
-@include('dashboard.admin_sidebar_partial')
+
 
 
 <div class="admin_layout">
@@ -795,12 +795,13 @@
         if (searchInputEl) searchInputEl.addEventListener('keyup', updateTableDisplay);
         if (searchOptionEl) searchOptionEl.addEventListener('change', updateTableDisplay);
 
+        console.log('Edit button clicked');
         editBtn.addEventListener('click', () => {
             if (!selectedRow) return;
             const sip = selectedRow.dataset.originalSip;
             if (!sip) return;
             // open import/edit page (adjust URL if needed)
-            window.location.href = "{{ url('/form') }}?sip=" + encodeURIComponent(sip);
+            window.location.href = "{{ route('dashboard.import') }}?sip=" + encodeURIComponent(sip);
         });
 
         function showDeleteModal(sip) {

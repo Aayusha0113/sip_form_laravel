@@ -121,6 +121,11 @@ body {
         <i class="fas fa-file-alt"></i> SIP Docs
     </a>
 
+    <a href="{{ route('dashboard.import') }}"
+       class="{{ request()->routeIs('dashboard.import') ? 'active' : '' }}">
+        <i class="fas fa-file-alt"></i> Import New Files
+    </a>
+
     <a href="{{ route('admin.client_apps') }}"
        class="{{ request()->routeIs('admin.client_apps') ? 'active' : '' }}">
         <i class="fas fa-briefcase"></i> Client Apps

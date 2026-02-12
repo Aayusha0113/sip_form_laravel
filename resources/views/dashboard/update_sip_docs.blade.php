@@ -15,8 +15,8 @@
     .admin-topbar {
         background: #ffffff;
         border-bottom: 1px solid #e5e7eb;
-        padding: 14px 25px;
-        margin-left: 250px;
+        padding: 0px;
+        margin-left: 0px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -145,7 +145,7 @@
 
 @section('content')
 
-@include('dashboard.admin_sidebar_partial')
+
 
 <div class="admin-topbar">
     <div class="topbar-left">

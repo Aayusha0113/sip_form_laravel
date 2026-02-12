@@ -182,42 +182,7 @@ table tbody tr:nth-child(even) {
 @endpush
 
 @section('content')
-<div class="admin-sidebar">
-    <div class="logo-container">
-        @if(file_exists(public_path('logo.jpg')))
-            <img src="{{ asset('logo.jpg') }}" alt="NTC Logo" class="logo">
-        @endif
-        <h5>NTC Admin</h5>
-    </div>
-    
-  <nav>
-    <a href="{{ route('admin.dashboard') }}"
-       class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-        <i class="fa fa-user-plus me-2"></i> Add User
-    </a>
-
-    <a href="{{ route('dashboard.user') }}"
-       class="{{ request()->routeIs('dashboard.user') ? 'active' : '' }}">
-        <i class="fas fa-users"></i> Users
-    </a>
-
-    <a href="{{ route('admin.activities') }}"
-       class="{{ request()->routeIs('admin.activities') ? 'active' : '' }}">
-        <i class="fas fa-list"></i> Activities
-    </a>
-
-    <a href="{{ route('dashboard.index') }}"
-       class="{{ request()->routeIs('dashboard.index') ? 'active' : '' }}">
-        <i class="fas fa-file-alt"></i> SIP Docs
-    </a>
-
-    <a href="{{ route('admin.client_apps') }}"
-       class="{{ request()->routeIs('admin.client_apps') ? 'active' : '' }}">
-        <i class="fas fa-briefcase"></i> Client Apps
-    </a>
-</nav>
-
-</div>
+@include('dashboard.admin_sidebar_partial')
 
 <div class="admin-topbar">
     <div class="topbar-left">

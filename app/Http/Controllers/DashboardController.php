@@ -2,19 +2,18 @@
 
 namespace App\Http\Controllers;
 
-
-use App\Models\Application;
-use App\Models\DashboardCompany;
-use App\Models\User;
-use App\Models\UserActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use App\Models\User;
+use App\Models\UserActivity;
+use App\Models\DashboardCompany;
+use App\Models\Application;
 use Illuminate\Http\JsonResponse;
-
-
 
 class DashboardController extends Controller
 {
@@ -330,8 +329,313 @@ public function letterApplication($id)
     return view('dashboard.upload_docs', compact('editCompany'));
 }
 
+// View Documents for specific SIP
+public function viewDocuments(Request $request)
+{
+    $user = Auth::user();
+    
+    // Decode permissions JSON to array
+    $userPermissions = $user->permissions ? json_decode($user->permissions, true) : [];
+    
+    // Check permission
+    if (!in_array('view_sip_docs', $userPermissions)) {
+        abort(403, 'Unauthorized access.');
+    }
+    
+    // Get SIP number from request
+    $sip = $request->get('sip');
+    if (!$sip) {
+        return redirect()->back()->with('error', 'No SIP selected.');
+    }
+    
+    // Normalize SIP number for lookup
+    $sipNormalized = $this->normalizeSipForLookup($sip);
+    
+    // Find company
+    $company = DashboardCompany::where('sip_number', $sipNormalized)
+        ->orWhere('sip_number', 'SIP' . $sipNormalized)
+        ->orWhere('sip_number', 'SIP ' . $sipNormalized)
+        ->first();
+    
+    if (!$company) {
+        return redirect()->back()->with('error', 'Company not found for SIP: ' . $sip);
+    }
+    
+    // Log access
+    UserActivity::create([
+        'user_id' => $user->id,
+        'activity' => "Viewed documents for SIP: {$company->sip_number}",
+    ]);
+    
+    // Get documents from database (scanned_docs table)
+    $documents = DB::table('uploaded_files')
+        ->where('sip_number', $sipNormalized)
+        ->orWhere('sip_number', 'SIP' . $sipNormalized)
+        ->orWhere('sip_number', 'SIP ' . $sipNormalized)
+        ->get();
+    
+    // Also get documents from file system for backup
+    $possiblePaths = [
+        public_path('SIPRecord'),
+        public_path('SIP Record'),
+        base_path('SIPRecord'),
+        base_path('SIP Record'),
+        storage_path('app/public/SIPRecord'),
+        storage_path('app/public/SIP Record'),
+        'E:/xampp/htdocs/sip_form_laravel/SIPRecord', // Direct path as fallback
+        'E:/xampp/htdocs/sip_form_laravel/SIP Record', // Direct path as fallback
+    ];
+    
+    $baseFolder = null;
+    foreach ($possiblePaths as $path) {
+        if (is_dir($path)) {
+            $baseFolder = $path;
+            break;
+        }
+    }
+    
+    $fileDocuments = [];
+    $allowedExt = ['jpg','jpeg','png','gif','pdf','doc','docx'];
+    
+    // Helper function to recursively search for files
+    $findFiles = function($dir, $extensions, $files = []) use (&$findFiles) {
+        if (!is_dir($dir)) return $files;
+        
+        $items = scandir($dir);
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') continue;
+            
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                $files = $findFiles($path, $extensions, $files);
+            } elseif (is_file($path)) {
+                $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                if (in_array($ext, $extensions)) {
+                    // Get relative path from storage
+                    $relativePath = str_replace(public_path('storage/'), '', $path);
+                    $fileDocuments[] = [
+                        'file_name' => basename($path),
+                        'file_path' => $relativePath,
+                        'source' => 'filesystem'
+                    ];
+                }
+            }
+        }
+        return $files;
+    };
+    
+    // Search for documents in SIP folder and subfolders
+    if (is_dir($baseFolder)) {
+        $directories = glob($baseFolder . DIRECTORY_SEPARATOR . "*", GLOB_ONLYDIR);
+        
+        foreach ($directories as $dir) {
+            $folderName = basename($dir);
+            
+            // Check if folder contains SIP number
+            if (stripos($folderName, $sipNormalized) !== false || 
+                stripos($folderName, $sip) !== false ||
+                stripos($folderName, 'SIP' . $sipNormalized) !== false) {
+                
+                // Search recursively in this folder
+                $fileDocuments = $findFiles($dir, $allowedExt, $fileDocuments);
+            }
+        }
+    }
+    
+    // Merge database and file system documents
+    $allDocuments = [];
+    
+    // Add database documents
+    foreach ($documents as $doc) {
+        $allDocuments[] = [
+            'file_name' => $doc->file_name,
+            'file_path' => $doc->file_path,
+            'source' => 'database'
+        ];
+    }
+    
+    // Add file system documents (avoid duplicates)
+    foreach ($fileDocuments as $fileDoc) {
+        $exists = false;
+        foreach ($allDocuments as $existing) {
+            if ($existing['file_name'] === $fileDoc['file_name']) {
+                $exists = true;
+                break;
+            }
+        }
+        if (!$exists) {
+            $allDocuments[] = $fileDoc;
+        }
+    }
+    
+    $companyName = $company->company_name ?? $company->sip_number;
+    
+    return view('dashboard.view_documents', compact('company', 'allDocuments', 'companyName'));
+}
 
+// Import form display
+public function importForm(Request $request)
+{
+    $user = Auth::user();
+    
+    // Admins have access to all functionality
+    if ($user->role === 'admin') {
+        // Log access
+        UserActivity::create([
+            'user_id' => $user->id,
+            'activity' => 'Accessed import form',
+        ]);
+        
+        // Get SIP from URL for edit mode
+        $editCompany = null;
+        $sip = $request->get('sip');
+        
+        if ($sip) {
+            $sipNormalized = $this->normalizeSipForLookup($sip);
+            $editCompany = DashboardCompany::where('sip_number', $sipNormalized)
+                ->orWhere('sip_number', 'SIP' . $sipNormalized)
+                ->orWhere('sip_number', 'SIP ' . $sipNormalized)
+                ->first();
+        }
+        
+        return view('dashboard.import', compact('editCompany'));
+    }
+    
+    // For users, check permissions
+    $userPermissions = $user->permissions ? json_decode($user->permissions, true) : [];
+    
+    // Check permission
+    if (!in_array('view_sip_docs', $userPermissions)) {
+        abort(403, 'Unauthorized access.');
+    }
+    
+    // Log access
+    UserActivity::create([
+        'user_id' => $user->id,
+        'activity' => 'Accessed import form',
+    ]);
+    
+    // Get SIP from URL for edit mode
+    $editCompany = null;
+    $sip = $request->get('sip');
+    
+    if ($sip) {
+        $sipNormalized = $this->normalizeSipForLookup($sip);
+        $editCompany = DashboardCompany::where('sip_number', $sipNormalized)
+            ->orWhere('sip_number', 'SIP' . $sipNormalized)
+            ->orWhere('sip_number', 'SIP ' . $sipNormalized)
+            ->first();
+    }
+    
+    return view('dashboard.import', compact('userPermissions', 'editCompany'));
+}
 
+// Import form submission
+public function importSubmit(Request $request)
+{
+    $user = Auth::user();
+    
+    // Admins have access to all functionality
+    if ($user->role !== 'admin') {
+        // For users, check permissions
+        $userPermissions = $user->permissions ? json_decode($user->permissions, true) : [];
+        
+        // Check permission
+        // if (!in_array('view_sip_docs', $userPermissions)) {
+        //     abort(403, 'Unauthorized access.');
+        // }
+    }
+    
+    // Validate request
+    $validated = $request->validate([
+        'sip_number' => 'required|string|max:50',
+        'service_dn' => 'nullable|string|max:100',
+        'sip_type' => 'nullable|string',
+        'customer_name' => 'required|string|max:255',
+        'customer_type' => 'nullable|string|max:100',
+        'proprietor_name' => 'nullable|string|max:100',
+        'company_reg_no' => 'nullable|string|max:50',
+        'reg_date' => 'nullable|date',
+        'pan_no' => 'nullable|string|max:50',
+        'province_perm' => 'nullable|string|max:100',
+        'district_perm' => 'nullable|string|max:100',
+        'municipality_perm' => 'nullable|string|max:100',
+        'ward_perm' => 'nullable|string|max:20',
+        'tole_perm' => 'nullable|string|max:100',
+        'province_install' => 'nullable|string|max:100',
+        'district_install' => 'nullable|string|max:100',
+        'municipality_install' => 'nullable|string|max:100',
+        'ward_install' => 'nullable|string|max:20',
+        'tole_install' => 'nullable|string|max:100',
+        'landline' => 'nullable|string|max:255',
+        'mobile' => 'nullable|string|max:50',
+        'email' => 'nullable|email|max:255',
+        'website' => 'nullable|string|max:255',
+        'objectives' => 'nullable|string',
+        'purpose' => 'nullable|string',
+        'sessions' => 'nullable|integer|min:0',
+        'authorized_signature' => 'nullable|string|max:100',
+        'signature_name' => 'nullable|string|max:100',
+        'position' => 'nullable|string|max:100',
+        'signature_date' => 'nullable|date',
+        'seal' => 'nullable|string|max:100',
+        'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png,gif,doc,docx|max:10240', // 10MB per file
+    ]);
+    
+    try {
+        // Create or update company
+        $sipNormalized = $this->normalizeSipForLookup($validated['sip_number']);
+        
+        // Check if this is an update operation
+        $isUpdate = $request->isMethod('PUT') || $request->has('sip_number');
+        
+        if ($isUpdate) {
+            // Update existing company
+            $company = DashboardCompany::where('sip_number', $sipNormalized)->first();
+            if ($company) {
+                $company->update($validated);
+            } else {
+                // Fallback to create if not found
+                $company = DashboardCompany::create($validated);
+            }
+        } else {
+            // Create new company
+            $company = DashboardCompany::create($validated);
+        }
+        
+        // Handle document uploads
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $file) {
+                if ($file->isValid()) {
+                    $fileName = time() . '_' . $file->getClientOriginalName();
+                    $filePath = $file->store('sip_docs', 'public');
+                    
+                    // Store in uploaded_files table
+                    DB::table('uploaded_files')->insert([
+                        'sip_number' => $sipNormalized,
+                        'file_name' => $fileName,
+                        'file_path' => 'sip_docs/' . $fileName,
+                        'uploaded_at' => now(),
+                    ]);
+                }
+            }
+        }
+        
+        // Log activity
+        $activity = $isUpdate ? 'Updated company' : 'Created new company';
+        UserActivity::create([
+            'user_id' => $user->id,
+            'activity' => $activity . ': ' . $validated['sip_number'],
+        ]);
+        
+        return redirect()->route('dashboard.import', ['sip' => $validated['sip_number']])
+            ->with('success', $isUpdate ? 'Company updated successfully!' : 'Company created successfully!');
+            
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Error saving company: ' . $e->getMessage());
+    }
+}
 
     public function user()
     {
