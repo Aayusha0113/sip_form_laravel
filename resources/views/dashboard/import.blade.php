@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-@include('dashboard.admin_sidebar_partial')
+
 
 <!-- Import Form Container -->
 <div class="import-form-container">
@@ -11,13 +11,13 @@
         <div class="edit-mode-notice">
             <i class="fas fa-edit"></i>
             <strong>Edit Mode:</strong> Editing SIP {{ request('sip') }}
-            <a href="{{ route('dashboard.import') }}" class="btn btn-sm btn-secondary">
+            <a href="{{ route('dashboard.import.form') }}" class="btn btn-sm btn-secondary">
                 <i class="fas fa-plus"></i> Import New SIP
             </a>
         </div>
     @endif
 
-    <form id="companyForm" method="POST" enctype="multipart/form-data">
+    <form id="companyForm" method="POST" action="{{ route('dashboard.import.submit') }}" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="edit_mode" value="{{ request()->has('sip') ? '1' : '0' }}">
         
@@ -238,13 +238,14 @@
             <h3>Upload Scanned Documents</h3>
             <div class="form-group">
                 <label>Select Documents:</label>
-                <input type="file" name="documents[]" class="form-control" multiple>
+                <input type="file" name="documents[]" class="form-control" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx">
+                <small class="text-muted">You can upload multiple documents at once (PDF, JPG, PNG, GIF, DOC, DOCX - Max 10MB per file)</small>
             </div>
         </div>
 
         <!-- Form Actions -->
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
+            <button type="button" class="btn btn-primary" onclick="{{ request()->has('sip') ? 'updateCompany()' : 'addCompany()' }}">
                 <i class="fas fa-save"></i>
                 {{ request()->has('sip') ? 'Update Company' : 'Add Company' }}
             </button>
@@ -368,6 +369,70 @@
     padding: 6px 12px;
     font-size: 13px;
 }
+/* Popup Modal Styles */
+.popup-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-content {
+    background: white;
+    padding: 30px 40px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    max-width: 400px;
+    animation: popupFadeIn 0.3s ease;
+}
+
+@keyframes popupFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.popup-content h3 {
+    margin: 0 0 15px 0;
+    color: #28a745;
+    font-size: 20px;
+    border: none;
+    padding: 0;
+}
+
+.popup-content p {
+    margin: 0 0 20px 0;
+    color: #333;
+    font-size: 14px;
+}
+
+.popup-content button {
+    background: #003366;
+    color: white;
+    padding: 10px 30px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 0;
+}
+
+.popup-content button:hover {
+    background: #0055aa;
+}
+
 </style>
 
 <script>
@@ -395,6 +460,221 @@ function copyPermanentToInstallation() {
             field.readOnly = false;
             field.style.backgroundColor = '';
         });
+    }
+}
+
+function addCompany(){
+    const form = document.getElementById('companyForm');
+    const sipInput = document.getElementById('sip_number');
+    const serviceInput = document.getElementById('service_dn');
+    const sipNumber = sipInput.value.trim();
+    const serviceDN = serviceInput.value.trim();
+
+    if (!sipNumber) {
+        alert('Please enter SIP number before adding company.');
+        return;
+    }
+
+    // Ensure installation address is synced if checkbox is checked
+    ensureInstallationAddressSynced();
+
+    const formData = new FormData(form);
+    formData.append('sip_number', sipNumber);
+    formData.append('service_dn', serviceDN);
+    formData.append('_token', '{{ csrf_token() }}');
+
+    fetch('{{ route("dashboard.import.submit") }}',{method:'POST',body:formData})
+    .then(async res=>{
+        const data = await res.text();
+        if (!res.ok) throw new Error(data || 'Failed to save company');
+        showSuccessModal('Company saved successfully!');
+        // Reset form inputs but keep SIP/DN for document uploads
+        form.reset();
+        sipInput.value = sipNumber;
+        serviceInput.value = serviceDN;
+        // Reset checkbox if it was checked
+        const checkbox = document.getElementById('sameAsPermanent');
+        if (checkbox) {
+            checkbox.checked = false;
+            copyPermanentToInstallation();
+        }
+    })
+    .catch(err=>alert('Error: '+err.message));
+}
+
+function ensureInstallationAddressSynced() {
+    const checkbox = document.getElementById('sameAsPermanent');
+    if (checkbox && checkbox.checked) {
+        // Copy permanent address values to installation address fields
+        document.querySelector('[name="province_install"]').value = document.querySelector('[name="province_perm"]').value;
+        document.querySelector('[name="district_install"]').value = document.querySelector('[name="district_perm"]').value;
+        document.querySelector('[name="municipality_install"]').value = document.querySelector('[name="municipality_perm"]').value;
+        document.querySelector('[name="ward_install"]').value = document.querySelector('[name="ward_perm"]').value;
+        document.querySelector('[name="tole_install"]').value = document.querySelector('[name="tole_perm"]').value;
+    }
+}
+
+function updateCompany(){
+    console.log('updateCompany function called');
+    const form = document.getElementById('companyForm');
+    const sipInput = document.getElementById('sip_number');
+    const serviceInput = document.getElementById('service_dn');
+    const sipNumber = sipInput.value.trim();
+    const serviceDN = serviceInput.value.trim();
+
+    console.log('SIP Number:', sipNumber);
+    console.log('Service DN:', serviceDN);
+
+    if (!sipNumber) {
+        alert('Missing SIP number.');
+        return;
+    }
+
+    // Ensure installation address is synced if checkbox is checked
+    ensureInstallationAddressSynced();
+
+    const formData = new FormData(form);
+    formData.append('sip_number', sipNumber);
+    formData.append('service_dn', serviceDN);
+    formData.append('_token', '{{ csrf_token() }}');
+
+    console.log('Sending PUT request to update company...');
+    const url = '{{ route("dashboard.import.submit.put") }}'; // Use the correct PUT route name
+    console.log('Generated URL:', url);
+    console.log('Form data:', formData);
+
+    // Prevent any form submission interference
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Try using XMLHttpRequest instead of fetch
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.setRequestHeader('Accept', 'text/plain');
+    xhr.onreadystatechange = function() {
+        console.log('XHR readyState:', xhr.readyState);
+        console.log('XHR status:', xhr.status);
+        if (xhr.readyState === 4) {
+            console.log('Response status:', xhr.status);
+            const data = xhr.responseText;
+            console.log('Response data:', data);
+            if (xhr.status === 200) {
+                try {
+                    const response = JSON.parse(data);
+                    if (response.success) {
+                        showSuccessModal(response.message);
+                        // Redirect to dashboard after successful update
+                        setTimeout(() => {
+                            window.location.href = response.redirect;
+                        }, 2000);
+                    } else {
+                        throw new Error(response.message || 'Update failed');
+                    }
+                } catch (e) {
+                    // Fallback for non-JSON responses
+                    if (data.includes('successfully')) {
+                        showSuccessModal('Company updated successfully!');
+                        setTimeout(() => {
+                            window.location.href = '{{ route("dashboard.index") }}';
+                        }, 2000);
+                    } else {
+                        throw new Error(data || 'Failed to update company');
+                    }
+                }
+            } else {
+                throw new Error(data || 'Failed to update company');
+            }
+        }
+    };
+    xhr.onerror = function(err) {
+        console.error('XHR Error:', err);
+        alert('Error: ' + err.message);
+    };
+    xhr.send(formData);
+}
+
+function uploadDocuments(){
+    const form=document.getElementById('companyForm');
+    const formData=new FormData(form);
+    
+    // Get SIP number from input field, or from URL parameter as fallback
+    let sipNumber = document.getElementById('sip_number').value;
+    if (!sipNumber) {
+        // Try to get from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        sipNumber = urlParams.get('sip') || '';
+    }
+    
+    const serviceDN = document.getElementById('service_dn').value;
+    
+    // Check if files are selected
+    const fileInput = form.querySelector('input[type="file"]');
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Please select at least one file to upload.');
+        return;
+    }
+    
+    // Check total file size (client-side guard)
+    const MAX_UPLOAD_BYTES = 500 * 1024 * 1024; // 500MB client-side limit (matches PHP upload_max_filesize)
+    const totalSize = Array.from(fileInput.files).reduce((sum, file) => sum + file.size, 0);
+    if (totalSize > MAX_UPLOAD_BYTES) {
+        alert('Selected files exceed the 500 MB limit. Please upload fewer or smaller files.');
+        return;
+    }
+    
+    // Check if SIP number is provided
+    if (!sipNumber) {
+        alert('Please enter a SIP number or ensure it is in the URL.');
+        return;
+    }
+    
+    formData.append('sip_number', sipNumber);
+    formData.append('service_dn', serviceDN);
+    formData.append('_token', '{{ csrf_token() }}');
+
+    // Use the Laravel upload handler
+    fetch('{{ route("dashboard.import.submit") }}',{method:'POST',body:formData})
+    .then(res=>res.text())
+    .then(data=>{
+        const normalized = (data || '').trim().toLowerCase();
+        if (normalized.includes('success') || res.ok) {
+            showSuccessModal('Document uploaded successfully!');
+            form.reset();
+            // Keep SIP number filled so user can add company afterward
+            document.getElementById('sip_number').value = sipNumber;
+        } else {
+            alert('Error: ' + data);
+        }
+    }).catch(err=>alert('Error uploading documents: '+err));
+}
+
+function showSuccessModal(message) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('successModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'successModal';
+        modal.className = 'popup-modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="popup-content">
+                <h3>Success!</h3>
+                <p>${message}</p>
+                <button onclick="closeSuccessModal()">OK</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        modal.querySelector('p').textContent = message;
+        modal.style.display = 'flex';
+    }
+}
+
+function closeSuccessModal() {
+    const modal = document.getElementById('successModal');
+    if (modal) {
+        modal.style.display = 'none';
     }
 }
 </script>

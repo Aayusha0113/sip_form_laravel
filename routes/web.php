@@ -28,7 +28,6 @@ Route::middleware(['auth', 'role:admin,user'])->group(function () {
 
 // Admin-only dashboard & user// Admin-only routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
     Route::get('/activities', [DashboardController::class, 'activities'])->name('activities');
     Route::get('/client-apps', [DashboardController::class, 'clientApps'])->name('client_apps');
     
@@ -54,10 +53,16 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
 // Dashboard routes (accessible by both admin and user)
 Route::middleware(['auth'])->prefix('dashboard')->name('dashboard.')->group(function () {
+    // Dashboard home
     Route::get('/', [DashboardController::class, 'index'])->name('index');
-    Route::get('/import', [DashboardController::class, 'importForm'])->name('import');
-    Route::post('/import', [DashboardController::class, 'importSubmit'])->name('import.submit');
+
+    // Import routes
+    Route::get('/import', [DashboardController::class, 'importForm'])->name('import.form'); // form page
+    Route::post('/import', [DashboardController::class, 'importSubmit'])->name('import.submit'); // submit form
+    Route::put('/import', [DashboardController::class, 'importSubmit'])->name('import.submit.put'); // optional, if you use PUT
 });
+
+
 
 // User listing (cards view)
  Route::get('/dashboard/user', [DashboardController::class, 'user'])->name('dashboard.user')->middleware('auth');

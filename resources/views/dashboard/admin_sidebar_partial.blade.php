@@ -121,8 +121,8 @@ body {
         <i class="fas fa-file-alt"></i> SIP Docs
     </a>
 
-    <a href="{{ route('dashboard.import') }}"
-       class="{{ request()->routeIs('dashboard.import') ? 'active' : '' }}">
+    <a href="{{ route('dashboard.import.form') }}"
+       class="{{ request()->routeIs('dashboard.import.form') ? 'active' : '' }}">
         <i class="fas fa-file-alt"></i> Import New Files
     </a>
 
