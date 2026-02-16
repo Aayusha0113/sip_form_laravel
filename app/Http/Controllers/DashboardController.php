@@ -58,6 +58,76 @@ class DashboardController extends Controller
 
 
 
+        // Debug: Log the first few companies to see what's being loaded
+
+        \Log::info('Dashboard companies loaded:', [
+
+            'total_count' => $companies->count(),
+
+            'first_company' => $companies->first() ? [
+
+                'id' => $companies->first()->id,
+
+                'sip_number' => $companies->first()->sip_number,
+
+                'customer_name' => $companies->first()->customer_name,
+
+                'updated_at' => $companies->first()->updated_at
+
+            ] : null,
+
+            'company_497' => $companies->where('id', 497)->first() ? [
+
+                'id' => $companies->where('id', 497)->first()->id,
+
+                'sip_number' => $companies->where('id', 497)->first()->sip_number,
+
+                'customer_name' => $companies->where('id', 497)->first()->customer_name,
+
+                'updated_at' => $companies->where('id', 497)->first()->updated_at
+
+            ] : 'not found',
+
+            'company_500' => $companies->where('id', 500)->first() ? [
+
+                'id' => $companies->where('id', 500)->first()->id,
+
+                'sip_number' => $companies->where('id', 500)->first()->sip_number,
+
+                'customer_name' => $companies->where('id', 500)->first()->customer_name,
+
+                'updated_at' => $companies->where('id', 500)->first()->updated_at
+
+            ] : 'not found',
+
+            'company_501' => $companies->where('id', 501)->first() ? [
+
+                'id' => $companies->where('id', 501)->first()->id,
+
+                'sip_number' => $companies->where('id', 501)->first()->sip_number,
+
+                'customer_name' => $companies->where('id', 501)->first()->customer_name,
+
+                'updated_at' => $companies->where('id', 501)->first()->updated_at
+
+            ] : 'not found',
+
+            'last_company' => $companies->last() ? [
+
+                'id' => $companies->last()->id,
+
+                'sip_number' => $companies->last()->sip_number,
+
+                'customer_name' => $companies->last()->customer_name,
+
+                'updated_at' => $companies->last()->updated_at
+
+            ] : null
+
+        ]);
+
+
+
         $totalCompanies = DashboardCompany::distinct('company_name')->count('company_name');
 
         $totalSIPs = DashboardCompany::distinct('sip_number')->count('sip_number');
@@ -1066,7 +1136,7 @@ public function importForm(Request $request)
 
     
 
-    return view('dashboard.import.form', compact('userPermissions', 'editCompany'));
+    return view('dashboard.import', compact('userPermissions', 'editCompany'));
 
 }
 
@@ -1112,7 +1182,7 @@ public function importSubmit(Request $request)
 
         'customer_type' => 'nullable|string|max:100',
 
-        'proprietor_name' => 'nullable|string|max:100',
+        'name_of_proprietor' => 'nullable|string|max:100',
 
         'company_reg_no' => 'nullable|string|max:50',
 
@@ -1188,47 +1258,69 @@ public function importSubmit(Request $request)
 
             ->first();
 
-
-
-        // Filter out null/empty fields to avoid overwriting
-
-        $updateData = array_filter($validated, function ($value) {
-
-            return !is_null($value) && $value !== '';
-
-        });
-
-
-
-        if ($company) {
-
-            // Update only non-null fields
-
-            $company->update($updateData);
-
-            $activityText = 'Updated company';
-
-        } else {
-
-            // Create new company
-
-            $company = DashboardCompany::create($updateData);
-
-            $activityText = 'Created new company';
-
+        // Map old PHP field names to new Laravel field names
+        if ($company && isset($validated['service_dn'])) {
+            $company->DN = $validated['service_dn']; // Map service_dn to DN field
         }
 
+        // Filter out null/empty fields to avoid overwriting
+        $updateData = array_filter($validated, function ($value) {
+            return !is_null($value) && $value !== '';
+        });
 
+        // Map form field names to database field names
+        $mappedData = [];
+        foreach ($updateData as $key => $value) {
+            switch ($key) {
+                case 'service_dn':
+                    $mappedData['DN'] = $value;
+                    break;
+                case 'customer_name':
+                    $mappedData['company_name'] = $value;
+                    break;
+                case 'name_of_proprietor':
+                    $mappedData['proprietor_name'] = $value;
+                    break;
+                default:
+                    $mappedData[$key] = $value;
+                    break;
+            }
+        }
+
+        if ($company) {
+            // Update only non-null fields
+            $company->update($mappedData);
+            $activityText = 'Updated company';
+            // Debug: Log what was updated
+            \Log::info('Company updated:', [
+                'company_id' => $company->id,
+                'update_data' => $mappedData,
+                'updated_fields' => array_keys($mappedData)
+            ]);
+        } else {
+            // Create new company
+            $company = DashboardCompany::create($mappedData);
+            $activityText = 'Created new company';
+            // Debug: Log what was created
+            \Log::info('Company created:', [
+                'company_id' => $company->id,
+                'create_data' => $mappedData,
+                'created_fields' => array_keys($mappedData)
+            ]);
+        }
 
         // Handle document uploads
-
+        $uploadedDocuments = [];
         if ($request->hasFile('documents')) {
-
             foreach ($request->file('documents') as $file) {
 
                 if ($file->isValid()) {
 
-                    $filePath = $file->store('sip_docs', 'public');
+                    // Create SIP-specific directory if it doesn't exist
+
+                    $sipDir = "sip_docs/{$sipNormalized}";
+
+                    $filePath = $file->store($sipDir, 'public');
 
                     DB::table('uploaded_files')->insert([
 
@@ -1241,11 +1333,15 @@ public function importSubmit(Request $request)
                         'uploaded_at' => now(),
 
                     ]);
-
+                    
+                    // Add to uploaded documents array for response
+                    $uploadedDocuments[] = [
+                        'name' => $file->getClientOriginalName(),
+                        'url' => asset($filePath)
+                    ];
                 }
 
             }
-
         }
 
 
@@ -1272,7 +1368,9 @@ public function importSubmit(Request $request)
 
                 'message' => $company->wasRecentlyCreated ? 'Company created successfully!' : 'Company updated successfully!',
 
-                'redirect' => route('dashboard.index')
+                'redirect' => route('dashboard.index'),
+
+                'documents' => $uploadedDocuments
 
             ]);
 

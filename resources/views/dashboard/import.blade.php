@@ -236,6 +236,44 @@
         <!-- Upload Scanned Documents -->
         <div class="form-section">
             <h3>Upload Scanned Documents</h3>
+            
+            @if($editCompany && isset($editCompany->sip_number))
+                <!-- Display existing documents -->
+                <div class="existing-documents">
+                    <h4>Existing Documents for SIP {{ $editCompany->sip_number }}:</h4>
+                    @php
+                        $sipNormalized = preg_replace('/[^0-9]/', '', $editCompany->sip_number);
+                        $existingDocs = \Illuminate\Support\Facades\DB::table('uploaded_files')
+                            ->where('sip_number', $sipNormalized)
+                            ->orderBy('uploaded_at', 'desc')
+                            ->get();
+                    @endphp
+                    @if(count($existingDocs) > 0)
+                        <ul class="document-list">
+                            @foreach($existingDocs as $doc)
+                                <li>
+                                    <i class="fas fa-file"></i>
+                                    {{ $doc->file_name }}
+                                    <a href="{{ asset($doc->file_path) }}" target="_blank" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <p class="no-documents">No documents uploaded yet.</p>
+                    @endif
+                </div>
+            @else
+                <!-- Show documents for new company being added -->
+                <div class="existing-documents">
+                    <h4>Uploaded Documents:</h4>
+                    <div id="uploaded-documents-list">
+                        <p class="no-documents">No documents uploaded yet.</p>
+                    </div>
+                </div>
+            @endif
+            
             <div class="form-group">
                 <label>Select Documents:</label>
                 <input type="file" name="documents[]" class="form-control" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx">
@@ -424,13 +462,46 @@
     padding: 10px 30px;
     border: none;
     border-radius: 5px;
-    cursor: pointer;
+    border: 1px solid #e0e3e7;
+}
+
+.existing-documents h4 {
+    margin: 0 0 10px 0;
+    color: #003366;
     font-size: 14px;
+}
+
+.document-list {
+    list-style: none;
+    padding: 0;
     margin: 0;
 }
 
-.popup-content button:hover {
-    background: #0055aa;
+.document-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    margin: 5px 0;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.document-list li i {
+    margin-right: 8px;
+    color: #003366;
+}
+
+.document-list li .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.no-documents {
+    color: #666;
+    font-style: italic;
+    margin: 0;
 }
 
 </style>
@@ -539,8 +610,10 @@ function updateCompany(){
     formData.append('_token', '{{ csrf_token() }}');
 
     console.log('Sending PUT request to update company...');
-    const url = '{{ route("dashboard.import.submit.put") }}'; // Use the correct PUT route name
+    const url = 'http://127.0.0.1:8000/dashboard/import'; // Hardcoded URL for testing
     console.log('Generated URL:', url);
+    console.log('URL length:', url.length);
+    console.log('URL chars:', url.split('').map(c => c.charCodeAt(0)));
     console.log('Form data:', formData);
 
     // Prevent any form submission interference
@@ -635,18 +708,46 @@ function uploadDocuments(){
 
     // Use the Laravel upload handler
     fetch('{{ route("dashboard.import.submit") }}',{method:'POST',body:formData})
-    .then(res=>res.text())
+    .then(res=>res.json())
     .then(data=>{
-        const normalized = (data || '').trim().toLowerCase();
-        if (normalized.includes('success') || res.ok) {
-            showSuccessModal('Document uploaded successfully!');
+        if (data.success) {
+            showSuccessModal(data.message);
             form.reset();
             // Keep SIP number filled so user can add company afterward
             document.getElementById('sip_number').value = sipNumber;
+            
+            // Update the uploaded documents list
+            updateUploadedDocumentsList(data.documents || []);
         } else {
-            alert('Error: ' + data);
+            alert('Error: ' + (data.message || 'Unknown error'));
         }
     }).catch(err=>alert('Error uploading documents: '+err));
+}
+
+function updateUploadedDocumentsList(documents) {
+    const listContainer = document.getElementById('uploaded-documents-list');
+    if (!listContainer) return;
+    
+    if (documents.length === 0) {
+        listContainer.innerHTML = '<p class="no-documents">No documents uploaded yet.</p>';
+        return;
+    }
+    
+    let html = '<ul class="document-list">';
+    documents.forEach(doc => {
+        html += `
+            <li>
+                <i class="fas fa-file"></i>
+                ${doc.name}
+                <a href="${doc.url}" target="_blank" class="btn btn-sm btn-primary">
+                    <i class="fas fa-eye"></i> View
+                </a>
+            </li>
+        `;
+    });
+    html += '</ul>';
+    
+    listContainer.innerHTML = html;
 }
 
 function showSuccessModal(message) {
