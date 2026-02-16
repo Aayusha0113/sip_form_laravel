@@ -664,15 +664,22 @@
                 Go Back
             </a>
             @if(count($documents) > 0)
-                <button onclick="openDocumentViewer()" class="btn btn-primary">
-                    <i class="fas fa-eye"></i>
-                    View All Documents
-                </button>
-                <a href="{{ route('user.view_documents', ['sip' => $company->sip_number]) }}" class="btn btn-secondary" target="_blank">
-                    <i class="fas fa-external-link-alt"></i>
-                    Open Document Gallery
-                </a>
-            @endif
+                    <button onclick="openDocumentViewer()" class="btn btn-primary">
+                        <i class="fas fa-eye"></i>
+                        View All Documents
+                    </button>
+                    @if(auth()->user()->role === 'admin')
+                        <a href="{{ route('admin.admin.view_documents', ['sip' => $company->sip_number]) }}" class="btn btn-secondary" target="_blank">
+                            <i class="fas fa-external-link-alt"></i>
+                            Open Document Gallery
+                        </a>
+                    @else
+                        <a href="{{ route('user.view_documents', ['sip' => $company->sip_number]) }}" class="btn btn-secondary" target="_blank">
+                            <i class="fas fa-external-link-alt"></i>
+                            Open Document Gallery
+                        </a>
+                    @endif
+                @endif
         </div>
         <div>
             <button onclick="window.print()" class="btn btn-secondary">

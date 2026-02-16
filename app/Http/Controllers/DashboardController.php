@@ -754,14 +754,10 @@ public function viewDocuments(Request $request)
 
     
 
-    // Check permission
-
-    if (!in_array('view_sip_docs', $userPermissions)) {
-
-        abort(403, 'Unauthorized access.');
-
-    }
-
+  // Check permission - allow admin users or users with view_sip_docs permission
+if ($user->role !== 'admin' && !in_array('view_sip_docs', $userPermissions)) {
+    abort(403, 'Unauthorized access.');
+}
     
 
     // Get SIP number from request
@@ -828,149 +824,9 @@ public function viewDocuments(Request $request)
 
     
 
-    // Also get documents from file system for backup
-
-    $possiblePaths = [
-
-        public_path('SIPRecord'),
-
-        public_path('SIP Record'),
-
-        base_path('SIPRecord'),
-
-        base_path('SIP Record'),
-
-        storage_path('app/public/SIPRecord'),
-
-        storage_path('app/public/SIP Record'),
-
-        'E:/xampp/htdocs/sip_form_laravel/SIPRecord', // Direct path as fallback
-
-        'E:/xampp/htdocs/sip_form_laravel/SIP Record', // Direct path as fallback
-
-    ];
-
-    
-
-    $baseFolder = null;
-
-    foreach ($possiblePaths as $path) {
-
-        if (is_dir($path)) {
-
-            $baseFolder = $path;
-
-            break;
-
-        }
-
-    }
-
-    
-
-    $fileDocuments = [];
-
-    $allowedExt = ['jpg','jpeg','png','gif','pdf','doc','docx'];
-
-    
-
-    // Helper function to recursively search for files
-
-    $findFiles = function($dir, $extensions, $files = []) use (&$findFiles) {
-
-        if (!is_dir($dir)) return $files;
-
-        
-
-        $items = scandir($dir);
-
-        foreach ($items as $item) {
-
-            if ($item === '.' || $item === '..') continue;
-
-            
-
-            $path = $dir . DIRECTORY_SEPARATOR . $item;
-
-            if (is_dir($path)) {
-
-                $files = $findFiles($path, $extensions, $files);
-
-            } elseif (is_file($path)) {
-
-                $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-
-                if (in_array($ext, $extensions)) {
-
-                    // Get relative path from storage
-
-                    $relativePath = str_replace(public_path('storage/'), '', $path);
-
-                    $fileDocuments[] = [
-
-                        'file_name' => basename($path),
-
-                        'file_path' => $relativePath,
-
-                        'source' => 'filesystem'
-
-                    ];
-
-                }
-
-            }
-
-        }
-
-        return $files;
-
-    };
-
-    
-
-    // Search for documents in SIP folder and subfolders
-
-    if (is_dir($baseFolder)) {
-
-        $directories = glob($baseFolder . DIRECTORY_SEPARATOR . "*", GLOB_ONLYDIR);
-
-        
-
-        foreach ($directories as $dir) {
-
-            $folderName = basename($dir);
-
-            
-
-            // Check if folder contains SIP number
-
-            if (stripos($folderName, $sipNormalized) !== false || 
-
-                stripos($folderName, $sip) !== false ||
-
-                stripos($folderName, 'SIP' . $sipNormalized) !== false) {
-
-                
-
-                // Search recursively in this folder
-
-                $fileDocuments = $findFiles($dir, $allowedExt, $fileDocuments);
-
-            }
-
-        }
-
-    }
-
-    
-
-    // Merge database and file system documents
+    // Get documents from database only
 
     $allDocuments = [];
-
-    
-
-    // Add database documents
 
     foreach ($documents as $doc) {
 
@@ -985,36 +841,6 @@ public function viewDocuments(Request $request)
         ];
 
     }
-
-    
-
-    // Add file system documents (avoid duplicates)
-
-    foreach ($fileDocuments as $fileDoc) {
-
-        $exists = false;
-
-        foreach ($allDocuments as $existing) {
-
-            if ($existing['file_name'] === $fileDoc['file_name']) {
-
-                $exists = true;
-
-                break;
-
-            }
-
-        }
-
-        if (!$exists) {
-
-            $allDocuments[] = $fileDoc;
-
-        }
-
-    }
-
-    
 
     $companyName = $company->company_name ?? $company->sip_number;
 

@@ -80,8 +80,8 @@ Route::delete('/users/{id}', [DashboardController::class, 'destroy'])->name('use
 // User-only dashboard with role-based permissions
 Route::middleware(['auth', 'role:user'])->match(['get', 'post'], '/user/dashboard', [DashboardController::class, 'userDashboard'])->name('user.dashboard');
 
-// User permission-based routes
-Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
+// Admin and User permission-based routes
+Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
     Route::get('/view-sip-docs', [DashboardController::class, 'viewSipDocs'])->name('view_sip_docs');
     Route::match(['get', 'post'], '/upload-docs', [DashboardController::class, 'uploadDocs'])->name('upload_docs');
     Route::get('/update-sip-docs', [DashboardController::class, 'updateSipDocs'])->name('update_sip_docs');
@@ -90,6 +90,11 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(f
     Route::match(['get', 'post'], '/view-documents', [DashboardController::class, 'viewDocuments'])->name('view_documents');
     // Route::get('/import', [DashboardController::class, 'importForm'])->name('import');
     // Route::post('/import', [DashboardController::class, 'importSubmit'])->name('import.submit');
+});
+
+// Admin document routes
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::match(['get', 'post'], '/view-documents', [DashboardController::class, 'viewDocuments'])->name('admin.view_documents');
 });
 
 // User update client applications
