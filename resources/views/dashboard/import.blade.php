@@ -553,24 +553,32 @@ function addCompany(){
     formData.append('sip_number', sipNumber);
     formData.append('service_dn', serviceDN);
     formData.append('_token', '{{ csrf_token() }}');
+    formData.append('_method', 'PUT');
 
-    fetch('{{ route("dashboard.import.submit") }}',{method:'POST',body:formData})
-    .then(async res=>{
-        const data = await res.text();
-        if (!res.ok) throw new Error(data || 'Failed to save company');
-        showSuccessModal('Company saved successfully!');
-        // Reset form inputs but keep SIP/DN for document uploads
+
+  fetch('{{ route("dashboard.import.submit") }}', {
+    method: 'POST',
+    body: formData,
+    headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+    }
+})
+.then(res => res.json())
+.then(data => {
+    if (data.success) {
+        showSuccessModal(data.message);
         form.reset();
         sipInput.value = sipNumber;
         serviceInput.value = serviceDN;
-        // Reset checkbox if it was checked
-        const checkbox = document.getElementById('sameAsPermanent');
-        if (checkbox) {
-            checkbox.checked = false;
-            copyPermanentToInstallation();
-        }
-    })
-    .catch(err=>alert('Error: '+err.message));
+    } else {
+        alert('Error: ' + (data.message || 'Failed to save company'));
+    }
+})
+.catch(err => {
+    console.error(err);
+    alert('Error: ' + err.message);
+});
 }
 
 function ensureInstallationAddressSynced() {
@@ -585,87 +593,52 @@ function ensureInstallationAddressSynced() {
     }
 }
 
-function updateCompany(){
-    console.log('updateCompany function called');
+function updateCompany() {
     const form = document.getElementById('companyForm');
-    const sipInput = document.getElementById('sip_number');
-    const serviceInput = document.getElementById('service_dn');
-    const sipNumber = sipInput.value.trim();
-    const serviceDN = serviceInput.value.trim();
-
-    console.log('SIP Number:', sipNumber);
-    console.log('Service DN:', serviceDN);
+    const sipNumber = document.getElementById('sip_number').value.trim();
+    const serviceDN = document.getElementById('service_dn').value.trim();
 
     if (!sipNumber) {
         alert('Missing SIP number.');
         return;
     }
 
-    // Ensure installation address is synced if checkbox is checked
     ensureInstallationAddressSynced();
 
     const formData = new FormData(form);
+
+    // Add required fields
     formData.append('sip_number', sipNumber);
     formData.append('service_dn', serviceDN);
-    formData.append('_token', '{{ csrf_token() }}');
 
-    console.log('Sending PUT request to update company...');
-    const url = 'http://127.0.0.1:8000/dashboard/import'; // Hardcoded URL for testing
-    console.log('Generated URL:', url);
-    console.log('URL length:', url.length);
-    console.log('URL chars:', url.split('').map(c => c.charCodeAt(0)));
-    console.log('Form data:', formData);
+    // Laravel method spoofing
+    formData.append('_method', 'PUT');
 
-    // Prevent any form submission interference
-    event.preventDefault();
-    event.stopPropagation();
-
-    // Try using XMLHttpRequest instead of fetch
-    const xhr = new XMLHttpRequest();
-    xhr.open('PUT', url, true);
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    xhr.setRequestHeader('Accept', 'text/plain');
-    xhr.onreadystatechange = function() {
-        console.log('XHR readyState:', xhr.readyState);
-        console.log('XHR status:', xhr.status);
-        if (xhr.readyState === 4) {
-            console.log('Response status:', xhr.status);
-            const data = xhr.responseText;
-            console.log('Response data:', data);
-            if (xhr.status === 200) {
-                try {
-                    const response = JSON.parse(data);
-                    if (response.success) {
-                        showSuccessModal(response.message);
-                        // Redirect to dashboard after successful update
-                        setTimeout(() => {
-                            window.location.href = response.redirect;
-                        }, 2000);
-                    } else {
-                        throw new Error(response.message || 'Update failed');
-                    }
-                } catch (e) {
-                    // Fallback for non-JSON responses
-                    if (data.includes('successfully')) {
-                        showSuccessModal('Company updated successfully!');
-                        setTimeout(() => {
-                            window.location.href = '{{ route("dashboard.index") }}';
-                        }, 2000);
-                    } else {
-                        throw new Error(data || 'Failed to update company');
-                    }
-                }
-            } else {
-                throw new Error(data || 'Failed to update company');
-            }
+    fetch('{{ route("dashboard.import.submit.put") }}', {
+        method: 'POST', // Always POST when using method spoofing
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
         }
-    };
-    xhr.onerror = function(err) {
-        console.error('XHR Error:', err);
-        alert('Error: ' + err.message);
-    };
-    xhr.send(formData);
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showSuccessModal(data.message);
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 1500);
+        } else {
+            alert('Error: ' + (data.message || 'Update failed'));
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Error updating company.');
+    });
 }
+
 
 function uploadDocuments(){
     const form=document.getElementById('companyForm');

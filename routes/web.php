@@ -48,7 +48,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
     Route::get('/admin/activities', [DashboardController::class, 'activities'])->name('admin.activities');
-    Route::get('/admin/client-apps', [DashboardController::class, 'clientApps'])->name('admin.client_apps');
+    //Route::get('/admin/client-apps', [DashboardController::class, 'clientApps'])->name('admin.client_apps');
+    Route::match(['get', 'post'], '/admin/client-apps', [DashboardController::class, 'clientApps'])->name('admin.client_apps');
+
 });
 
 // Dashboard routes (accessible by both admin and user)
@@ -95,6 +97,15 @@ Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
 // Admin document routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::match(['get', 'post'], '/view-documents', [DashboardController::class, 'viewDocuments'])->name('admin.view_documents');
+    
+     // View single application
+    Route::get('/view-client/{id}', [DashboardController::class, 'viewApplication'])->name('applications.view');
+
+    // Estimate for an application
+    Route::get('/estimate-client/{id}', [DashboardController::class, 'estimateApplication'])->name('applications.estimate');
+
+    // Letter for an application
+    Route::get('/letter-client/{id}', [DashboardController::class, 'letterApplication'])->name('applications.letter');
 });
 
 // User update client applications

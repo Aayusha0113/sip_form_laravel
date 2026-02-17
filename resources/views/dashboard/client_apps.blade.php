@@ -160,9 +160,9 @@ td.center { text-align:center; }
                                     <button type="submit" name="update_status" class="action-btn small-btn">Update</button>
                                 </form>
 
-                                <a href="#" class="action-btn small-btn">View</a>
-                                <a href="#" class="action-btn small-btn">Estimate</a>
-                                <a href="#" class="action-btn small-btn">Letter</a>
+                                <a href="{{ route('admin.applications.view', ['id' => $app->id]) }}" class="action-btn small-btn">View</a>
+                                <a href="{{ route('admin.applications.estimate', ['id' => $app->id]) }}" class="action-btn small-btn">Estimate</a>
+                                <a href="{{ route('admin.applications.letter', ['id' => $app->id]) }}" class="action-btn small-btn">Letter</a>
                             </td>
                         </tr>
                         @empty

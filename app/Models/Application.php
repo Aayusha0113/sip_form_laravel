@@ -14,4 +14,6 @@ class Application extends Model
         'sessions' => 'integer',
         'did' => 'integer',
     ];
+
+    public $timestamps = false;
 }

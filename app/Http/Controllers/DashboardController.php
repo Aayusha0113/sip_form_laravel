@@ -1112,6 +1112,8 @@ public function importSubmit(Request $request)
                     break;
             }
         }
+        
+$mappedData['sip_number'] = $sipNormalized;
 
         if ($company) {
             // Update only non-null fields
@@ -1684,14 +1686,6 @@ public function viewSipDocs()
 
 }
 
-
-
-
-
-    
-
-
-
     // Update SIP Documents
 
     public function updateSipDocs()
@@ -1844,19 +1838,4 @@ public function viewSipDocs()
 
 }
 
-
-
-
-
-
-
-
-
 }
-
-
-
-
-
-
-
