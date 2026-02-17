@@ -15,21 +15,45 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Protected: admin or user (shared SIP listing)
-Route::middleware(['auth', 'role:admin,user'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
-    Route::get('/dashboard/show/{sip}', [DashboardController::class, 'show'])
-    ->name('dashboard.show');
+// Admin-only routes (legacy)
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
+    Route::get('/admin/activities', [DashboardController::class, 'activities'])->name('admin.activities');
+    //Route::get('/admin/client-apps', [DashboardController::class, 'clientApps'])->name('admin.client_apps');
+    Route::match(['get', 'post'], '/admin/client-apps', [DashboardController::class, 'clientApps'])->name('admin.client_apps');
 
 });
 
+// User listing (cards view)
+ Route::get('/dashboard/user', [DashboardController::class, 'user'])->name('dashboard.user')->middleware('auth');
+// Edit user form
+ Route::get('/users/{id}/edit', [DashboardController::class, 'edit'])->name('users.edit');
+// Update user (when Save Changes is clicked)
+Route::put('/users/{id}', [DashboardController::class, 'update'])->name('users.update');
+// Delete user (when Delete User is clicked)
+Route::delete('/users/{id}', [DashboardController::class, 'destroy'])->name('users.destroy');
 
 
 
 // Admin-only dashboard & user// Admin-only routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/activities', [DashboardController::class, 'activities'])->name('activities');
+    
+    // client applications management routes(SIP Approve)
     Route::get('/client-apps', [DashboardController::class, 'clientApps'])->name('client_apps');
+    // Admin document routes
+
+        Route::match(['get', 'post'], '/view-documents', [DashboardController::class, 'viewDocuments'])->name('admin.view_documents');
+        
+         // View single application
+        Route::get('/view-client/{id}', [DashboardController::class, 'viewApplication'])->name('applications.view');
+    
+        // Estimate for an application
+        Route::get('/estimate-client/{id}', [DashboardController::class, 'estimateApplication'])->name('applications.estimate');
+    
+        // Letter for an application
+        Route::get('/letter-client/{id}', [DashboardController::class, 'letterApplication'])->name('applications.letter');
+    
     
     // User management routes
     Route::get('/users', [DashboardController::class, 'user'])->name('users');
@@ -40,20 +64,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     
     // Company management routes
     Route::post('/companies/delete', [DashboardController::class, 'deleteCompany'])->name('companies.delete');
+    });
     
-   
-});
+// SIP Docs (shared SIP listing)
+    Route::middleware(['auth', 'role:admin,user'])->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+        Route::get('/dashboard/show/{sip}', [DashboardController::class, 'show'])
+        ->name('dashboard.show');
+    
+        });
 
-// Admin-only routes (legacy)
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
-    Route::get('/admin/activities', [DashboardController::class, 'activities'])->name('admin.activities');
-    //Route::get('/admin/client-apps', [DashboardController::class, 'clientApps'])->name('admin.client_apps');
-    Route::match(['get', 'post'], '/admin/client-apps', [DashboardController::class, 'clientApps'])->name('admin.client_apps');
-
-});
-
-// Dashboard routes (accessible by both admin and user)
+// Import file (New SIP Line) routes (accessible by both admin and user)
 Route::middleware(['auth'])->prefix('dashboard')->name('dashboard.')->group(function () {
     // Dashboard home
     Route::get('/', [DashboardController::class, 'index'])->name('index');
@@ -66,24 +87,14 @@ Route::middleware(['auth'])->prefix('dashboard')->name('dashboard.')->group(func
 
 
 
-// User listing (cards view)
- Route::get('/dashboard/user', [DashboardController::class, 'user'])->name('dashboard.user')->middleware('auth');
 
-// Edit user form
- Route::get('/users/{id}/edit', [DashboardController::class, 'edit'])->name('users.edit');
-
-// Update user (when Save Changes is clicked)
-Route::put('/users/{id}', [DashboardController::class, 'update'])->name('users.update');
-
-// Delete user (when Delete User is clicked)
-Route::delete('/users/{id}', [DashboardController::class, 'destroy'])->name('users.destroy');
-
-
+//for Users
 // User-only dashboard with role-based permissions
 Route::middleware(['auth', 'role:user'])->match(['get', 'post'], '/user/dashboard', [DashboardController::class, 'userDashboard'])->name('user.dashboard');
 
 // Admin and User permission-based routes
 Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
+    
     Route::get('/view-sip-docs', [DashboardController::class, 'viewSipDocs'])->name('view_sip_docs');
     Route::match(['get', 'post'], '/upload-docs', [DashboardController::class, 'uploadDocs'])->name('upload_docs');
     Route::get('/update-sip-docs', [DashboardController::class, 'updateSipDocs'])->name('update_sip_docs');
@@ -94,19 +105,6 @@ Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
     // Route::post('/import', [DashboardController::class, 'importSubmit'])->name('import.submit');
 });
 
-// Admin document routes
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::match(['get', 'post'], '/view-documents', [DashboardController::class, 'viewDocuments'])->name('admin.view_documents');
-    
-     // View single application
-    Route::get('/view-client/{id}', [DashboardController::class, 'viewApplication'])->name('applications.view');
-
-    // Estimate for an application
-    Route::get('/estimate-client/{id}', [DashboardController::class, 'estimateApplication'])->name('applications.estimate');
-
-    // Letter for an application
-    Route::get('/letter-client/{id}', [DashboardController::class, 'letterApplication'])->name('applications.letter');
-});
 
 // User update client applications
 Route::middleware(['auth', 'role:user'])->match(['get', 'post'], 'user/client-apps', [DashboardController::class, 'updateclientApps'])->name('user.update_client_apps');

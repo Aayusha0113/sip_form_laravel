@@ -316,7 +316,7 @@ class DashboardController extends Controller
 
         
 
-        if (in_array('dashboard_activities', $userPermissions)) {
+        if (in_array('view_logs', $userPermissions)) {
 
             $activities = UserActivity::with('user')
 
@@ -369,21 +369,14 @@ class DashboardController extends Controller
         // Full permissions list for checkbox rendering in Blade
 
         $allPermissions = [
-
-            'dashboard_activities',
-
+            'view_sip_docs',
             'upload_docs',
-
             'update_sip_docs',
-
             'view_client_apps',
-
             'manage_users',
-
+            'view_logs',
             'update_client_apps',
-
         ];
-
 
 
         return view('dashboard.user_dashboard', compact('userPermissions', 'activities', 'allUsers', 'allPermissions'));

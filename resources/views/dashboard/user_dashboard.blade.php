@@ -116,7 +116,7 @@
         <div class="card-header">
             <img src="{{ asset('logo.jpg') }}" alt="Logo" class="logo">
             <div class="header-text">
-                <h3>Welcome, {{ auth()->user()->username }}</h3>
+               <h3>Welcome, {{ Auth::user()->username }}</h3>
                 <h5>NTC User Dashboard</h5>
             </div>
         </div>
@@ -130,17 +130,19 @@
         <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
+        @if(session('message'))
+        <div class="alert alert-info">{{ session('message') }}</div>
+        @endif
+
       <!-- Action Buttons -->
 <div class="action-btns">
     @foreach($userPermissions as $permission)
-
         @if($permission === 'view_sip_docs')
             <button onclick="window.location.href='{{ route('user.view_sip_docs') }}'">
                 View SIP Docs
             </button>
 
         @elseif($permission === 'upload_docs')
-            {{-- THIS MUST BE A GET PAGE, NOT dashboard.upload_docs --}}
             <button onclick="window.location.href='{{ route('user.upload_docs') }}'">
                 Upload Documents
             </button>
@@ -160,8 +162,11 @@
                 Update Client Applications
             </button>
 
+        @else
+            <button class="section-btn" data-target="{{ $permission }}">
+                {{ ucfirst(str_replace('_', ' ', $permission)) }}
+            </button>
         @endif
-
     @endforeach
 </div>
 
@@ -183,7 +188,7 @@
                     @foreach($activities as $activity)
                     <tr>
                         <td>{{ $activity->id }}</td>
-                        <td>{{ $activity->user->username }}</td>
+                        <td>{{ $activity->user ? $activity->user->username : 'Unknown' }}</td>
                         <td>{{ $activity->activity }}</td>
                         <td>{{ $activity->activity_time }}</td>
                     </tr>
@@ -217,11 +222,13 @@
         <!-- MANAGE USERS -->
         @if(in_array('manage_users', $userPermissions))
         <div id="manage_users" class="section">
+
             <h4 class="fw-bold mb-3">Manage Users</h4>
 
-            <!-- Add User -->
-            <form method="POST" action="{{ route('admin.users.store') }}">
+            <!-- Add User Form -->
+            <form method="POST" action="{{ route('user.dashboard') }}">
                 @csrf
+                <input type="hidden" name="add_user" value="1">
 
                 <div class="row mb-3">
                     <div class="col">
@@ -246,7 +253,7 @@
                 @endforeach
 
                 <br><br>
-                <button type="submit" class="btn btn-primary">Add User</button>
+                <button type="submit" name="add_user" class="btn btn-primary">Add User</button>
             </form>
 
             <hr>
@@ -256,6 +263,7 @@
                 @foreach($allUsers as $user)
                 <div class="user-card">
                     <h6>{{ $user->username }}</h6>
+
                     <span class="badge badge-role">{{ ucfirst($user->role) }}</span><br><br>
 
                     Permissions:<br>
@@ -264,12 +272,14 @@
                     @endforeach
 
                     <br><br>
+
                     <a href="{{ route('users.edit', $user->id) }}" class="btn btn-edit">
                         Edit
                     </a>
                 </div>
                 @endforeach
             </div>
+
         </div>
         @endif
 

@@ -205,9 +205,10 @@
                                 <a href="{{ route('dashboard.show', $company->sip_number) }}" class="btn btn-primary">
                                     <i class="fas fa-eye"></i> View
                                 </a>
-                                <button class="btn btn-warning" onclick="editCompany('{{ $company->sip_number }}')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
+                                <a href="{{ route('dashboard.import.form', $company->sip_number) }}" class="btn btn-primary">
+                                    <i class="fas fa-eye"></i> Edit
+                                </a>
+                                
                                 <button class="btn btn-danger" onclick="deleteCompany('{{ $company->sip_number }}')">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>

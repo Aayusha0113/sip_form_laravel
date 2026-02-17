@@ -123,12 +123,12 @@ body {
 
     <a href="{{ route('dashboard.import.form') }}"
        class="{{ request()->routeIs('dashboard.import.form') ? 'active' : '' }}">
-        <i class="fas fa-file-alt"></i> Import New Files
+        <i class="fas fa-file-alt"></i> New SIP Line
     </a>
 
     <a href="{{ route('admin.client_apps') }}"
        class="{{ request()->routeIs('admin.client_apps') ? 'active' : '' }}">
-        <i class="fas fa-briefcase"></i> Client Apps
+        <i class="fas fa-briefcase"></i> New SIP Approve
     </a>
 </nav>
 
