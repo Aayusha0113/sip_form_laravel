@@ -105,6 +105,19 @@
     .btn-edit:hover {
         background-color: #e0a800;
     }
+
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        font-size: 12px;
+        margin-left: 5px;
+    }
+
+    .btn-danger:hover {
+        background-color: #c82333;
+    }
 </style>
 @endpush
 
@@ -276,6 +289,12 @@
                     <a href="{{ route('users.edit', $user->id) }}" class="btn btn-edit">
                         Edit
                     </a>
+
+                    <form method="POST" action="{{ route('users.destroy', $user->id) }}" style="display:inline;" onsubmit="return confirmDelete('{{ $user->username }}')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
                 </div>
                 @endforeach
             </div>
@@ -293,6 +312,10 @@
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
+    function confirmDelete(username) {
+        return confirm('Are you sure you want to delete user "' + username + '"? This action cannot be undone.');
+    }
+
     $(document).ready(function(){
         var tableInitialized = false;
 

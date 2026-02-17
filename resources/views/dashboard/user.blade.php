@@ -193,11 +193,12 @@
                     </div>
                     <div style="margin-top:12px;">
                         <a href="{{ route('users.edit', $user->id) }}" class="action-btn edit">Edit</a>
-   <!-- <a href="{{ route('dashboard.user') }}"
-       class="{{ request()->routeIs('dashboard.user') ? 'active' : '' }}">
-        <i class="fas fa-users"></i> Users
-    </a> -->
-                        </a>
+
+                        <form method="POST" action="{{ route('users.destroy', $user->id) }}" style="display:inline;" onsubmit="return confirmDelete('{{ $user->username }}')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="action-btn delete">Delete</button>
+                        </form>
                     </div>
                 </div>
                 @endforeach
