@@ -19,7 +19,6 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
     Route::get('/admin/activities', [DashboardController::class, 'activities'])->name('admin.activities');
-    //Route::get('/admin/client-apps', [DashboardController::class, 'clientApps'])->name('admin.client_apps');
     Route::match(['get', 'post'], '/admin/client-apps', [DashboardController::class, 'clientApps'])->name('admin.client_apps');
 
 });
@@ -40,7 +39,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/activities', [DashboardController::class, 'activities'])->name('activities');
     
     // client applications management routes(SIP Approve)
-    Route::get('/client-apps', [DashboardController::class, 'clientApps'])->name('client_apps');
+    // Route::get('/client-apps', [DashboardController::class, 'clientApps'])->name('client_apps');
     // Admin document routes
 
         Route::match(['get', 'post'], '/view-documents', [DashboardController::class, 'viewDocuments'])->name('admin.view_documents');
@@ -93,7 +92,7 @@ Route::middleware(['auth'])->prefix('dashboard')->name('dashboard.')->group(func
 Route::middleware(['auth', 'role:user'])->match(['get', 'post'], '/user/dashboard', [DashboardController::class, 'userDashboard'])->name('user.dashboard');
 
 // Admin and User permission-based routes
-Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
+Route::middleware(['auth' , 'role:user'])->prefix('user')->name('user.')->group(function () {
     
     Route::get('/view-sip-docs', [DashboardController::class, 'viewSipDocs'])->name('view_sip_docs');
     Route::match(['get', 'post'], '/upload-docs', [DashboardController::class, 'uploadDocs'])->name('upload_docs');
@@ -106,12 +105,12 @@ Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
 });
 
 
-// User update client applications
-Route::middleware(['auth', 'role:user'])->match(['get', 'post'], 'user/client-apps', [DashboardController::class, 'updateclientApps'])->name('user.update_client_apps');
 
 // User-only view client applications
 Route::middleware(['auth', 'role:user'])->group(function () {
+    
     Route::get('/user/view-clients', [DashboardController::class, 'viewClientApps'])->name('user.view_client_apps');
+    
 
     // View single application
     Route::get('/user/view-client/{id}', [DashboardController::class, 'viewApplication'])->name('applications.view');

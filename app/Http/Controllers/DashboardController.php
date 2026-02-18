@@ -1403,11 +1403,11 @@ $mappedData['sip_number'] = $sipNormalized;
 
                 }
 
-                return redirect()->route('admin.client_apps')->with('success', 'Status updated.');
+                return redirect()->back()->with('success', 'Status updated.');
 
             }
 
-            return redirect()->route('admin.client_apps')->with('error', 'Application not found.');
+            return redirect()->back()->with('error', 'Application not found.');
 
         }
 
@@ -1737,98 +1737,82 @@ public function viewSipDocs()
 
     }
 
-
-
-    // Update Client Applications
-
     public function updateClientApps(Request $request)
+    {
+    
 
-{
-
-    $user = Auth::user();
-
-
-
-    UserActivity::create([
-
-        'user_id' => $user->id,
-
-        'activity' => 'Accessed update client applications',
-
-    ]);
-
-
-
-    // Update status
-
-    if ($request->has('update_status')) {
-
-        $app = Application::find($request->id);
-
-
-
-        if ($app) {
-
-            $app->status = $request->status;
-
-            $app->save();
-
-
+        $user = Auth::user();
+        
+        
+        if ($request->isMethod('get') && $user) {
 
             UserActivity::create([
 
                 'user_id' => $user->id,
 
-                'activity' => "Updated status of application ID {$app->id}",
+                'activity' => 'access update client Applications Dashboard',
 
             ]);
 
+        }
+
+        // Update status
+         // Handle status update (per-row)
+
+        if ($request->isMethod('post') && $request->has('update_status')) {
+
+            $id = $request->input('id');
+
+            $newStatus = $request->input('status');
+
+            $app = Application::find($id);
+
+            if ($app) {
+
+                $app->status = $newStatus;
+
+                $app->save();
 
 
-            return back()->with('success', 'Status updated successfully.');
+
+                if ($user) {
+
+                    UserActivity::create([
+
+                        'user_id' => $user->id,
+
+                        'activity' => "Updated status of application ID {$id} to {$newStatus}",
+
+                    ]);
+
+                }
+
+                return redirect()->back()->with('success', 'Status updated.');
+
+            }
+
+            return redirect()->back()->with('error', 'Application not found.');
 
         }
 
-    }
+        // Delete selected
+        if ($request->has('delete_selected')) {
+            $ids = $request->input('selected', []);
 
+            if (!empty($ids)) {
+                Application::destroy($ids);
 
+                UserActivity::create([
+                    'user_id' => $user->id,
+                    'activity' => 'Deleted applications: ' . implode(', ', $ids),
+                ]);
 
-    // Delete selected
-
-    if ($request->has('delete_selected')) {
-
-        $ids = $request->input('selected', []);
-
-
-
-        if (!empty($ids)) {
-
-            Application::destroy($ids);
-
-
-
-            UserActivity::create([
-
-                'user_id' => $user->id,
-
-                'activity' => 'Deleted applications: ' . implode(', ', $ids),
-
-            ]);
-
-
-
-            return back()->with('success', 'Applications deleted.');
-
+                return redirect()->back()->with('success', 'Applications deleted.');
+            }
         }
 
+        $applications = Application::orderBy('id', 'desc')->get();
+        return view('dashboard.update_client_apps', compact('applications'));
     }
-
-
-
-    $applications = Application::orderBy('id', 'desc')->get();
-
-    return view('dashboard.update_client_apps', compact('applications'));
-
-}
 
 }

@@ -119,7 +119,7 @@ td.center { text-align:center; }
             <div class="alert-error">{{ session('error') }}</div>
         @endif
 
-        <form id="deleteForm" method="POST" action="{{ route('admin.client_apps') }}">
+        <form id="deleteForm" method="POST" action="{{ route('user.update_client_apps') }}">
             @csrf
             <input type="hidden" name="delete_selected" value="1">
 
@@ -148,7 +148,7 @@ td.center { text-align:center; }
                             <td>{{ $app->did }}</td>
                             <td class="center">{{ ucfirst($app->status ?? 'pending') }}</td>
                             <td class="center">
-                                <form method="POST" action="{{ route('admin.client_apps') }}" style="display:inline;">
+                                <form method="POST" action="{{ route('user.update_client_apps') }}" style="display:inline;">
                                     @csrf
                                     <input type="hidden" name="id" value="{{ $app->id }}">
                                     <select name="status" style="padding:6px;border-radius:6px;border:1px solid #e4eef8;">
@@ -159,9 +159,9 @@ td.center { text-align:center; }
                                     <button type="submit" name="update_status" class="action-btn small-btn">Update</button>
                                 </form>
 
-                                <a href="#" class="action-btn small-btn">View</a>
-                                <a href="#" class="action-btn small-btn">Estimate</a>
-                                <a href="#" class="action-btn small-btn">Letter</a>
+                                <a href="{{ route('applications.view', ['id' => $app->id]) }}" class="action-btn small-btn">View</a>
+                                <a href="{{ route('applications.estimate', ['id' => $app->id]) }}" class="action-btn small-btn">Estimate</a>
+                                <a href="{{ route('applications.letter', ['id' => $app->id]) }}" class="action-btn small-btn">Letter</a>
                             </td>
                         </tr>
                         @empty
