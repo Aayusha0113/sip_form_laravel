@@ -48,10 +48,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/view-client/{id}', [DashboardController::class, 'viewApplication'])->name('applications.view');
     
         // Estimate for an application
-        Route::get('/estimate-client/{id}', [DashboardController::class, 'estimateApplication'])->name('applications.estimate');
+        Route::get('/estimate-client/{id}', [DashboardController::class, 'estimate'])->name('applications.estimate');
     
         // Letter for an application
         Route::get('/letter-client/{id}', [DashboardController::class, 'letterApplication'])->name('applications.letter');
+
+        Route::post('/letter-client/{id}/send', [DashboardController::class, 'sendLetterEmail'])
+    ->name('send_letter_email');
     
     
     // User management routes

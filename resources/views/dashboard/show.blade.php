@@ -444,11 +444,11 @@
             <div class="field-row">
                 <div>
                     <span class="field-label">Service/DN No</span>
-                    <div class="field-value">{{ $company->service_dn ?? 'N/A' }}</div>
+                    <div class="field-value">{{ $company->DN ?? 'N/A' }}</div>
                 </div>
                 <div>
                     <span class="field-label">Name of Proprietor/Director</span>
-                    <div class="field-value">{{ $company->name_of_proprietor ?? 'N/A' }}</div>
+                    <div class="field-value">{{ $company->proprietor_name ?? 'N/A' }}</div>
                 </div>
             </div>
             <div class="field-row">
@@ -478,27 +478,27 @@
             <div class="field-row">
                 <div>
                     <span class="field-label">Province</span>
-                    <div class="field-value {{ $company->province_perm ? '' : 'empty' }}">{{ $company->province_perm ?? 'Not Provided' }}</div>
+                    <div class="field-value {{ $company->perm_province ? '' : 'empty' }}">{{ $company->perm_province ?? 'Not Provided' }}</div>
                 </div>
                 <div>
                     <span class="field-label">District</span>
-                    <div class="field-value {{ $company->district_perm ? '' : 'empty' }}">{{ $company->district_perm ?? 'Not Provided' }}</div>
+                    <div class="field-value {{ $company->perm_district ? '' : 'empty' }}">{{ $company->perm_district ?? 'Not Provided' }}</div>
                 </div>
             </div>
             <div class="field-row">
                 <div>
                     <span class="field-label">Municipality</span>
-                    <div class="field-value {{ $company->municipality_perm ? '' : 'empty' }}">{{ $company->municipality_perm ?? 'Not Provided' }}</div>
+                    <div class="field-value {{ $company->perm_municipality ? '' : 'empty' }}">{{ $company->perm_municipality ?? 'Not Provided' }}</div>
                 </div>
                 <div>
                     <span class="field-label">Ward</span>
-                    <div class="field-value {{ $company->ward_perm ? '' : 'empty' }}">{{ $company->ward_perm ?? 'Not Provided' }}</div>
+                    <div class="field-value {{ $company->perm_ward ? '' : 'empty' }}">{{ $company->perm_ward ?? 'Not Provided' }}</div>
                 </div>
             </div>
             <div class="field-row single">
                 <div>
                     <span class="field-label">Tole</span>
-                    <div class="field-value {{ $company->tole_perm ? '' : 'empty' }}">{{ $company->tole_perm ?? 'Not Provided' }}</div>
+                    <div class="field-value {{ $company->perm_tole ? '' : 'empty' }}">{{ $company->perm_tole ?? 'Not Provided' }}</div>
                 </div>
             </div>
         </div>
@@ -512,27 +512,27 @@
             <div class="field-row">
                 <div>
                     <span class="field-label">Province</span>
-                    <div class="field-value {{ $company->province_install ? '' : 'empty' }}">{{ $company->province_install ?? 'Not Provided' }}</div>
+                    <div class="field-value {{ $company->inst_province ? '' : 'empty' }}">{{ $company->inst_province ?? 'Not Provided' }}</div>
                 </div>
                 <div>
                     <span class="field-label">District</span>
-                    <div class="field-value {{ $company->district_install ? '' : 'empty' }}">{{ $company->district_install ?? 'Not Provided' }}</div>
+                    <div class="field-value {{ $company->inst_district ? '' : 'empty' }}">{{ $company->inst_district ?? 'Not Provided' }}</div>
                 </div>
             </div>
             <div class="field-row">
                 <div>
                     <span class="field-label">Municipality</span>
-                    <div class="field-value {{ $company->municipality_install ? '' : 'empty' }}">{{ $company->municipality_install ?? 'Not Provided' }}</div>
+                    <div class="field-value {{ $company->inst_municipality ? '' : 'empty' }}">{{ $company->inst_municipality ?? 'Not Provided' }}</div>
                 </div>
                 <div>
                     <span class="field-label">Ward</span>
-                    <div class="field-value {{ $company->ward_install ? '' : 'empty' }}">{{ $company->ward_install ?? 'Not Provided' }}</div>
+                    <div class="field-value {{ $company->inst_ward ? '' : 'empty' }}">{{ $company->inst_ward ?? 'Not Provided' }}</div>
                 </div>
             </div>
             <div class="field-row single">
                 <div>
                     <span class="field-label">Tole</span>
-                    <div class="field-value {{ $company->tole_install ? '' : 'empty' }}">{{ $company->tole_install ?? 'Not Provided' }}</div>
+                    <div class="field-value {{ $company->inst_tole ? '' : 'empty' }}">{{ $company->inst_tole ?? 'Not Provided' }}</div>
                 </div>
             </div>
         </div>

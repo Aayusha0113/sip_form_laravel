@@ -31,9 +31,9 @@
                            value="{{ request('sip') }}" {{ request()->has('sip') ? 'readonly' : '' }} required>
                 </div>
                 <div class="form-group">
-                    <label for="service_dn">Service/DN No:</label>
-                    <input type="text" name="service_dn" id="service_dn" placeholder="DN001"
-                           value="{{ old('service_dn') ?? $editCompany->service_dn ?? '' }}">
+                    <label for="DN">Service/DN No:</label>
+                    <input type="text" name="DN" id="DN" placeholder="DN001"
+                           value="{{ old('DN') ?? $editCompany->DN ?? '' }}">
                 </div>
             </div>
         </div>
@@ -96,27 +96,27 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Province:</label>
-                    <input type="text" name="province_perm" id="province_perm" class="form-control" value="{{ old('province_perm') ?? $editCompany->province_perm ?? '' }}">
+                    <input type="text" name="perm_province" id="perm_province" class="form-control" value="{{ old('perm_province') ?? $editCompany->perm_province ?? '' }}">
                 </div>
                 <div class="form-group">
                     <label>District:</label>
-                    <input type="text" name="district_perm" id="district_perm" class="form-control" value="{{ old('district_perm') ?? $editCompany->district_perm ?? '' }}">
+                    <input type="text" name="perm_district" id="perm_district" class="form-control" value="{{ old('perm_district') ?? $editCompany->perm_district ?? '' }}">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Municipality:</label>
-                    <input type="text" name="municipality_perm" id="municipality_perm" class="form-control" value="{{ old('municipality_perm') ?? $editCompany->municipality_perm ?? '' }}">
+                    <input type="text" name="perm_municipality" id="perm_municipality" class="form-control" value="{{ old('perm_municipality') ?? $editCompany->perm_municipality ?? '' }}">
                 </div>
                 <div class="form-group">
                     <label>Ward:</label>
-                    <input type="text" name="ward_perm" id="ward_perm" class="form-control" value="{{ old('ward_perm') ?? $editCompany->ward_perm ?? '' }}">
+                    <input type="text" name="perm_ward" id="perm_ward" class="form-control" value="{{ old('perm_ward') ?? $editCompany->perm_ward ?? '' }}">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Tole:</label>
-                    <input type="text" name="tole_perm" id="tole_perm" class="form-control" value="{{ old('tole_perm') ?? $editCompany->tole_perm ?? '' }}">
+                    <input type="text" name="perm_tole" id="perm_tole" class="form-control" value="{{ old('perm_tole') ?? $editCompany->perm_tole ?? '' }}">
                 </div>
             </div>
         </div>
@@ -131,27 +131,27 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Province:</label>
-                    <input type="text" name="province_install" class="form-control" value="{{ old('province_install') ?? $editCompany->province_install ?? '' }}">
+                    <input type="text" name="inst_province" class="form-control" value="{{ old('inst_province') ?? $editCompany->inst_province ?? '' }}">
                 </div>
                 <div class="form-group">
                     <label>District:</label>
-                    <input type="text" name="district_install" class="form-control" value="{{ old('district_install') ?? $editCompany->district_install ?? '' }}">
+                    <input type="text" name="inst_district" class="form-control" value="{{ old('inst_district') ?? $editCompany->inst_district ?? '' }}">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Municipality:</label>
-                    <input type="text" name="municipality_install" class="form-control" value="{{ old('municipality_install') ?? $editCompany->municipality_install ?? '' }}">
+                    <input type="text" name="inst_municipality" class="form-control" value="{{ old('inst_municipality') ?? $editCompany->inst_municipality ?? '' }}">
                 </div>
                 <div class="form-group">
                     <label>Ward:</label>
-                    <input type="text" name="ward_install" class="form-control" value="{{ old('ward_install') ?? $editCompany->ward_install ?? '' }}">
+                    <input type="text" name="inst_ward" class="form-control" value="{{ old('inst_ward') ?? $editCompany->inst_ward ?? '' }}">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Tole:</label>
-                    <input type="text" name="tole_install" class="form-control" value="{{ old('tole_install') ?? $editCompany->tole_install ?? '' }}">
+                    <input type="text" name="inst_tole" class="form-control" value="{{ old('inst_tole') ?? $editCompany->inst_tole ?? '' }}">
                 </div>
             </div>
         </div>
@@ -514,11 +514,11 @@ function copyPermanentToInstallation() {
     
     if (checkbox.checked) {
         // Copy permanent address values to installation address fields
-        document.querySelector('[name="province_install"]').value = document.querySelector('[name="province_perm"]').value;
-        document.querySelector('[name="district_install"]').value = document.querySelector('[name="district_perm"]').value;
-        document.querySelector('[name="municipality_install"]').value = document.querySelector('[name="municipality_perm"]').value;
-        document.querySelector('[name="ward_install"]').value = document.querySelector('[name="ward_perm"]').value;
-        document.querySelector('[name="tole_install"]').value = document.querySelector('[name="tole_perm"]').value;
+        document.querySelector('[name="inst_province"]').value = document.querySelector('[name="perm_province"]').value;
+        document.querySelector('[name="inst_district"]').value = document.querySelector('[name="perm_district"]').value;
+        document.querySelector('[name="inst_municipality"]').value = document.querySelector('[name="perm_municipality"]').value;
+        document.querySelector('[name="inst_ward"]').value = document.querySelector('[name="perm_ward"]').value;
+        document.querySelector('[name="inst_tole"]').value = document.querySelector('[name="perm_tole"]').value;
         
         // Make installation address fields readonly
         installFields.forEach(field => {
@@ -537,7 +537,7 @@ function copyPermanentToInstallation() {
 function addCompany(){
     const form = document.getElementById('companyForm');
     const sipInput = document.getElementById('sip_number');
-    const serviceInput = document.getElementById('service_dn');
+    const serviceInput = document.getElementById('DN');
     const sipNumber = sipInput.value.trim();
     const serviceDN = serviceInput.value.trim();
 
@@ -551,7 +551,7 @@ function addCompany(){
 
     const formData = new FormData(form);
     formData.append('sip_number', sipNumber);
-    formData.append('service_dn', serviceDN);
+    formData.append('DN', serviceDN);
     formData.append('_token', '{{ csrf_token() }}');
     formData.append('_method', 'PUT');
 
@@ -585,18 +585,18 @@ function ensureInstallationAddressSynced() {
     const checkbox = document.getElementById('sameAsPermanent');
     if (checkbox && checkbox.checked) {
         // Copy permanent address values to installation address fields
-        document.querySelector('[name="province_install"]').value = document.querySelector('[name="province_perm"]').value;
-        document.querySelector('[name="district_install"]').value = document.querySelector('[name="district_perm"]').value;
-        document.querySelector('[name="municipality_install"]').value = document.querySelector('[name="municipality_perm"]').value;
-        document.querySelector('[name="ward_install"]').value = document.querySelector('[name="ward_perm"]').value;
-        document.querySelector('[name="tole_install"]').value = document.querySelector('[name="tole_perm"]').value;
+        document.querySelector('[name="inst_province"]').value = document.querySelector('[name="perm_province"]').value;
+        document.querySelector('[name="inst_district"]').value = document.querySelector('[name="perm_district"]').value;
+        document.querySelector('[name="inst_municipality"]').value = document.querySelector('[name="perm_municipality"]').value;
+        document.querySelector('[name="inst_ward"]').value = document.querySelector('[name="perm_ward"]').value;
+        document.querySelector('[name="inst_tole"]').value = document.querySelector('[name="perm_tole"]').value;
     }
 }
 
 function updateCompany() {
     const form = document.getElementById('companyForm');
     const sipNumber = document.getElementById('sip_number').value.trim();
-    const serviceDN = document.getElementById('service_dn').value.trim();
+    const serviceDN = document.getElementById('DN').value.trim();
 
     if (!sipNumber) {
         alert('Missing SIP number.');
@@ -609,7 +609,7 @@ function updateCompany() {
 
     // Add required fields
     formData.append('sip_number', sipNumber);
-    formData.append('service_dn', serviceDN);
+    formData.append('DN', serviceDN);
 
     // Laravel method spoofing
     formData.append('_method', 'PUT');
@@ -652,7 +652,7 @@ function uploadDocuments(){
         sipNumber = urlParams.get('sip') || '';
     }
     
-    const serviceDN = document.getElementById('service_dn').value;
+    const serviceDN = document.getElementById('DN').value;
     
     // Check if files are selected
     const fileInput = form.querySelector('input[type="file"]');
@@ -676,7 +676,7 @@ function uploadDocuments(){
     }
     
     formData.append('sip_number', sipNumber);
-    formData.append('service_dn', serviceDN);
+    formData.append('DN', serviceDN);
     formData.append('_token', '{{ csrf_token() }}');
 
     // Use the Laravel upload handler

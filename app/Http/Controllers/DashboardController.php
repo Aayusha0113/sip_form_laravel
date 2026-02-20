@@ -30,7 +30,7 @@ use App\Models\Application;
 
 use Illuminate\Http\JsonResponse;
 
-
+use Illuminate\Support\Facades\Mail;
 
 class DashboardController extends Controller
 
@@ -445,29 +445,36 @@ public function viewApplication($id)
 
 // Show estimate for a single application
 
-public function estimateApplication($id)
-
+public function estimate($id)
 {
+    $application = Application::find($id);
 
-    $user = Auth::user();
+    if (!$application) {
+        abort(404, "Application not found.");
+    }
 
-    $application = Application::findOrFail($id);
+    // Calculations
+    $sessions = intval($application->sessions);
+    $rental = 200;
+    $tsc = 20;
+    $total_per_session = $rental + $tsc;
+    $total_sessions = $total_per_session * $sessions;
+    $vat_total = round($total_sessions * 0.13);
+    $grand_total = $total_sessions + $vat_total;
 
-
-
-    UserActivity::create([
-
-        'user_id' => $user->id,
-
-        'activity' => "Viewed estimate for application ID {$id}",
-
-    ]);
-
-
-
-    return view('dashboard.application_estimate', compact('application'));
-
+    // Pass all variables to Blade
+    return view('dashboard.application_estimate', compact(
+        'application',
+        'sessions',
+        'rental',
+        'tsc',
+        'total_per_session',
+        'total_sessions',
+        'vat_total',
+        'grand_total'
+    ));
 }
+
 
 
 
@@ -495,6 +502,26 @@ public function letterApplication($id)
 
     return view('dashboard.application_letter', compact('application'));
 
+}
+public function sendLetterEmail($id)
+{
+    $application = Application::findOrFail($id);
+
+    // Check if email exists
+    if (empty($application->email)) {
+        return back()->with('error', 'This application has no email address.');
+    }
+
+    Mail::send([], [], function ($message) use ($application) {
+        $message->to($application->email) // must be a valid string
+                ->subject('Nepal Telecom Letter')
+                ->setBody(
+                    'Dear '.$application->customer_name.',<br><br>Please find your SIP letter attached.<br><br>Thank you.',
+                    'text/html'
+                );
+    });
+
+    return back()->with('success', 'Letter sent to '.$application->email);
 }
 
 
@@ -583,7 +610,7 @@ public function letterApplication($id)
 
             'sip_number' => 'required|string|max:50',
 
-            'service_dn' => 'nullable|string|max:100',
+            'DN' => 'nullable|string|max:100',
 
             'sip_type' => 'nullable|string',
 
@@ -599,25 +626,25 @@ public function letterApplication($id)
 
             'pan_no' => 'nullable|string|max:50',
 
-            'province_perm' => 'nullable|string|max:100',
+            'perm_province' => 'nullable|string|max:100',
 
-            'district_perm' => 'nullable|string|max:100',
+            'perm_district' => 'nullable|string|max:100',
 
-            'municipality_perm' => 'nullable|string|max:100',
+            'perm_municipality' => 'nullable|string|max:100',
 
-            'ward_perm' => 'nullable|string|max:20',
+            'perm_ward' => 'nullable|string|max:20',
 
-            'tole_perm' => 'nullable|string|max:100',
+            'perm_tole' => 'nullable|string|max:100',
 
-            'province_install' => 'nullable|string|max:100',
+            'inst_province' => 'nullable|string|max:100',
 
-            'district_install' => 'nullable|string|max:100',
+            'inst_district' => 'nullable|string|max:100',
 
-            'municipality_install' => 'nullable|string|max:100',
+            'inst_municipality' => 'nullable|string|max:100',
 
-            'ward_install' => 'nullable|string|max:20',
+            'inst_ward' => 'nullable|string|max:20',
 
-            'tole_install' => 'nullable|string|max:100',
+            'inst_tole' => 'nullable|string|max:100',
 
             'landline' => 'nullable|string|max:255',
 
@@ -993,7 +1020,7 @@ public function importSubmit(Request $request)
 
         'sip_number' => 'required|string|max:50',
 
-        'service_dn' => 'nullable|string|max:100',
+        'DN' => 'nullable|string|max:100',
 
         'sip_type' => 'nullable|string',
 
@@ -1001,7 +1028,7 @@ public function importSubmit(Request $request)
 
         'customer_type' => 'nullable|string|max:100',
 
-        'name_of_proprietor' => 'nullable|string|max:100',
+        'proprietor_name' => 'nullable|string|max:100',
 
         'company_reg_no' => 'nullable|string|max:50',
 
@@ -1009,25 +1036,25 @@ public function importSubmit(Request $request)
 
         'pan_no' => 'nullable|string|max:50',
 
-        'province_perm' => 'nullable|string|max:100',
+        'perm_province' => 'nullable|string|max:100',
 
-        'district_perm' => 'nullable|string|max:100',
+        'perm_district' => 'nullable|string|max:100',
 
-        'municipality_perm' => 'nullable|string|max:100',
+        'perm_municipality' => 'nullable|string|max:100',
 
-        'ward_perm' => 'nullable|string|max:20',
+        'perm_ward' => 'nullable|string|max:20',
 
-        'tole_perm' => 'nullable|string|max:100',
+        'perm_tole' => 'nullable|string|max:100',
 
-        'province_install' => 'nullable|string|max:100',
+        'inst_province' => 'nullable|string|max:100',
 
-        'district_install' => 'nullable|string|max:100',
+        'inst_district' => 'nullable|string|max:100',
 
-        'municipality_install' => 'nullable|string|max:100',
+        'inst_municipality' => 'nullable|string|max:100',
 
-        'ward_install' => 'nullable|string|max:20',
+        'inst_ward' => 'nullable|string|max:20',
 
-        'tole_install' => 'nullable|string|max:100',
+        'inst_tole' => 'nullable|string|max:100',
 
         'landline' => 'nullable|string|max:255',
 
@@ -1078,8 +1105,8 @@ public function importSubmit(Request $request)
             ->first();
 
         // Map old PHP field names to new Laravel field names
-        if ($company && isset($validated['service_dn'])) {
-            $company->DN = $validated['service_dn']; // Map service_dn to DN field
+        if ($company && isset($validated['DN'])) {
+            $company->DN = $validated['DN']; // Map DN to DN field
         }
 
         // Filter out null/empty fields to avoid overwriting
@@ -1091,13 +1118,13 @@ public function importSubmit(Request $request)
         $mappedData = [];
         foreach ($updateData as $key => $value) {
             switch ($key) {
-                case 'service_dn':
+                case 'DN':
                     $mappedData['DN'] = $value;
                     break;
                 case 'customer_name':
                     $mappedData['company_name'] = $value;
                     break;
-                case 'name_of_proprietor':
+                case 'proprietor_name':
                     $mappedData['proprietor_name'] = $value;
                     break;
                 default:
